@@ -1,6 +1,14 @@
-
 import { GoogleGenAI } from "@google/genai";
 
+// Declare process to avoid TypeScript errors if @types/node is not available
+declare const process: {
+  env: {
+    API_KEY: string | undefined;
+    [key: string]: string | undefined;
+  };
+};
+
+// The API key must be obtained exclusively from the environment variable process.env.API_KEY
 const apiKey = process.env.API_KEY || '';
 
 let ai: GoogleGenAI | null = null;
@@ -15,9 +23,11 @@ try {
 
 export const generateAIResponse = async (prompt: string, language: 'en' | 'es' | 'zh' = 'en'): Promise<string> => {
   if (!ai) {
+    // Simulate network delay
     await new Promise(resolve => setTimeout(resolve, 1000));
+    
     if (language === 'es') return "Estoy corriendo en modo demo porque no se encontró la API_KEY. Por favor configúrala.";
-    if (language === 'zh') return "由于未找到 API_KEY，我正在演示模式下运行。请进行配置。";
+    if (language === 'zh') return "由于未找到 API_KEY，我正在演示模式下运行。请配置它。";
     return "I am running in demo mode because no API_KEY was found. Please configure it.";
   }
 
