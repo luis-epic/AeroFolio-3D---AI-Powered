@@ -12,12 +12,14 @@ export default defineConfig(({ mode }) => {
     // Define global constant replacements
     define: {
       // This allows the code to access process.env.API_KEY as if it were Node.js.
-      // We check multiple possible variable names to be robust for Vercel configuration.
+      // We add || "" to ensure JSON.stringify never receives undefined, which would skip replacement
+      // and cause a crash in the browser (ReferenceError: process is not defined).
       'process.env.API_KEY': JSON.stringify(
         env.VITE_API_KEY || 
         process.env.VITE_API_KEY || 
         process.env.API_KEY || 
-        process.env.GOOGLE_API_KEY
+        process.env.GOOGLE_API_KEY ||
+        "" 
       )
     },
     build: {
