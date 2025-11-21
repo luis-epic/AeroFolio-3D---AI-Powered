@@ -11,9 +11,14 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     // Define global constant replacements
     define: {
-      // This allows the code to access process.env.API_KEY as if it were Node.js,
-      // getting the value from VITE_API_KEY defined in Vercel/Environment.
-      'process.env.API_KEY': JSON.stringify(env.VITE_API_KEY || process.env.VITE_API_KEY)
+      // This allows the code to access process.env.API_KEY as if it were Node.js.
+      // We check multiple possible variable names to be robust for Vercel configuration.
+      'process.env.API_KEY': JSON.stringify(
+        env.VITE_API_KEY || 
+        process.env.VITE_API_KEY || 
+        process.env.API_KEY || 
+        process.env.GOOGLE_API_KEY
+      )
     },
     build: {
       outDir: 'dist',

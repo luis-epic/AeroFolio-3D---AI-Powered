@@ -13,6 +13,10 @@ const apiKey = process.env.API_KEY || '';
 
 let ai: GoogleGenAI | null = null;
 
+if (!apiKey) {
+  console.warn("⚠️ AeroFolio Warning: API_KEY not found in environment variables. AI features will run in Demo Mode.");
+}
+
 try {
   if (apiKey) {
     ai = new GoogleGenAI({ apiKey: apiKey });
@@ -23,12 +27,12 @@ try {
 
 export const generateAIResponse = async (prompt: string, language: 'en' | 'es' | 'zh' = 'en'): Promise<string> => {
   if (!ai) {
-    // Simulate network delay
+    // Simulate network delay for realism in demo mode
     await new Promise(resolve => setTimeout(resolve, 1000));
     
-    if (language === 'es') return "Estoy corriendo en modo demo porque no se encontró la API_KEY. Por favor configúrala.";
-    if (language === 'zh') return "由于未找到 API_KEY，我正在演示模式下运行。请配置它。";
-    return "I am running in demo mode because no API_KEY was found. Please configure it.";
+    if (language === 'es') return "Estoy corriendo en modo demo porque no se encontró la API_KEY. Por favor configúrala en Vercel (Settings > Environment Variables).";
+    if (language === 'zh') return "由于未找到 API_KEY，我正在演示模式下运行。请在 Vercel 设置中配置它。";
+    return "I am running in demo mode because no API_KEY was found. Please configure it in Vercel (Settings > Environment Variables).";
   }
 
   try {
