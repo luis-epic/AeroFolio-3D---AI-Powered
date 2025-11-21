@@ -51,7 +51,7 @@ export const TRANSLATIONS = {
     contact: {
       title: "Let's Connect",
       description: "Currently open for freelance projects and full-time opportunities in Frontend Architecture and AI Integration.",
-      email: "email@example.com",
+      email: "luismartinez.developer@gmail.com",
       linkedin: "LinkedIn Profile",
       github: "GitHub Profile"
     },
@@ -114,7 +114,7 @@ export const TRANSLATIONS = {
     contact: {
       title: "Conectemos",
       description: "Actualmente disponible para proyectos freelance y oportunidades full-time en Arquitectura Frontend e Integración de IA.",
-      email: "correo@ejemplo.com",
+      email: "luismartinez.developer@gmail.com",
       linkedin: "Perfil LinkedIn",
       github: "Perfil GitHub"
     },
@@ -177,7 +177,7 @@ export const TRANSLATIONS = {
     contact: {
       title: "保持联系",
       description: "目前接受前端架构和 AI 集成方面的兼职项目和全职机会。",
-      email: "电子邮箱",
+      email: "luismartinez.developer@gmail.com",
       linkedin: "领英主页",
       github: "GitHub 主页"
     },

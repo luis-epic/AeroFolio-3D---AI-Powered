@@ -300,13 +300,13 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
                 </p>
                 
                 <div className="space-y-4 w-full max-w-xs">
-                  <a href="#" className="block w-full py-3 px-4 bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded-lg text-white transition-colors flex items-center justify-center gap-3">
+                  <a href="mailto:luismartinez.developer@gmail.com" className="block w-full py-3 px-4 bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded-lg text-white transition-colors flex items-center justify-center gap-3">
                     <span>📧</span> {t.contact.email}
                   </a>
-                  <a href="#" className="block w-full py-3 px-4 bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded-lg text-white transition-colors flex items-center justify-center gap-3">
+                  <a href="https://www.linkedin.com/in/luisepico/" target="_blank" rel="noopener noreferrer" className="block w-full py-3 px-4 bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded-lg text-white transition-colors flex items-center justify-center gap-3">
                     <span>💼</span> {t.contact.linkedin}
                   </a>
-                  <a href="#" className="block w-full py-3 px-4 bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded-lg text-white transition-colors flex items-center justify-center gap-3">
+                  <a href="https://github.com/luis-epic" target="_blank" rel="noopener noreferrer" className="block w-full py-3 px-4 bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded-lg text-white transition-colors flex items-center justify-center gap-3">
                     <span>🐙</span> {t.contact.github}
                   </a>
                 </div>
