@@ -46,7 +46,13 @@ export const TRANSLATIONS = {
       subtitle: "Powered by Gemini 2.5 Flash",
       placeholder: "Ask about my experience...",
       send: "Send",
-      initialMessage: "Hello! I'm the AI assistant for this portfolio. Ask me about Luis's skills, experience, or favorite tech stack."
+      initialMessage: "Hello! I'm the AI assistant for this portfolio. Ask me about Luis's skills, experience, or favorite tech stack.",
+      quickQuestions: [
+        "What is your tech stack?",
+        "Tell me about your experience",
+        "Why should I hire you?",
+        "Do you know Three.js?"
+      ]
     },
     contact: {
       title: "Let's Connect",
@@ -109,7 +115,13 @@ export const TRANSLATIONS = {
       subtitle: "Potenciado por Gemini 2.5 Flash",
       placeholder: "Pregunta sobre mi experiencia...",
       send: "Enviar",
-      initialMessage: "¡Hola! Soy el asistente IA de este portafolio. Pregúntame sobre las habilidades, experiencia o stack tecnológico de Luis."
+      initialMessage: "¡Hola! Soy el asistente IA de este portafolio. Pregúntame sobre las habilidades, experiencia o stack tecnológico de Luis.",
+      quickQuestions: [
+        "¿Cuál es tu stack tecnológico?",
+        "Háblame de tu experiencia",
+        "¿Por qué contratarte?",
+        "¿Sabes usar Three.js?"
+      ]
     },
     contact: {
       title: "Conectemos",
@@ -172,7 +184,13 @@ export const TRANSLATIONS = {
       subtitle: "由 Gemini 2.5 Flash 驱动",
       placeholder: "询问我的经验...",
       send: "发送",
-      initialMessage: "您好！我是这个作品集的 AI 助手。您可以问我关于 Luis 的技能、经验或技术栈的问题。"
+      initialMessage: "您好！我是这个作品集的 AI 助手。您可以问我关于 Luis 的技能、经验或技术栈的问题。",
+      quickQuestions: [
+        "你的技术栈是什么？",
+        "讲讲你的经验",
+        "为什么要录用你？",
+        "你会用 Three.js 吗？"
+      ]
     },
     contact: {
       title: "保持联系",

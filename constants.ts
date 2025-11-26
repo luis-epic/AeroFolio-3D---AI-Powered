@@ -12,7 +12,7 @@ export const CAMERA_POSITIONS: Record<Section, CameraTarget> = {
   projects: {
     // Changed from frontal view to "User sitting at desk" view (Higher Y, Closer Z)
     position: [0, 1.6, 1.5], 
-    target: [0, 0.2, -0.2], // Look slightly down at the hinge/screen center
+    target: [0, 0.5, -0.2], // Look at center of screen (was 0.2)
   },
   contact: {
     position: [2, 1.8, 3], // Higher Y to see full phone

@@ -1,4 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
+import { MOCK_PROJECTS } from "../constants";
 
 // Declare process to avoid TypeScript errors if @types/node is not available
 declare const process: {
@@ -38,12 +39,24 @@ export const generateAIResponse = async (prompt: string, language: 'en' | 'es' |
   try {
     const modelId = 'gemini-2.5-flash';
     
-    let systemInstruction = "You are the AI persona of a senior software engineer's portfolio (Luis Martinez). Keep answers concise, professional, yet witty. Focus on technology, innovation, and the user's skills. Respond in English.";
+    // RAG-LITE: Inject project data directly into the system context
+    const projectsContext = JSON.stringify(MOCK_PROJECTS.map(p => ({
+        name: p.title,
+        techStack: p.tech,
+        details: p.description
+    })));
+
+    let baseInstruction = `You are the AI persona of a senior software engineer's portfolio (Luis Martinez). 
+    Here is the database of Luis's projects: ${projectsContext}.
+    Use this data to answer specific questions about his work. 
+    Keep answers concise, professional, yet witty. Focus on technology, innovation, and the user's skills.`;
+    
+    let systemInstruction = baseInstruction + " Respond in English.";
     
     if (language === 'es') {
-        systemInstruction = "Eres la personalidad IA del portafolio de un ingeniero de software senior (Luis Martinez). Mantén las respuestas concisas, profesionales y con un toque de ingenio. Enfócate en tecnología, innovación y las habilidades del usuario. Responde en Español.";
+        systemInstruction = baseInstruction + " Responde en Español.";
     } else if (language === 'zh') {
-        systemInstruction = "你是高级软件工程师（Luis Martinez）作品集的 AI 角色。保持回答简洁、专业且风趣。专注于技术、创新和用户的技能。请用中文回答。";
+        systemInstruction = baseInstruction + " 请用中文回答。";
     }
 
     const response = await ai.models.generateContent({

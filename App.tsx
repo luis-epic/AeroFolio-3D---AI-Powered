@@ -1,3 +1,4 @@
+
 import React, { useState, Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { Section } from './types';
@@ -8,6 +9,9 @@ import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 
 const AppContent: React.FC = () => {
   const [activeSection, setActiveSection] = useState<Section>('home');
+  // State to track if AI is currently generating a response
+  const [aiState, setAiState] = useState<'idle' | 'thinking'>('idle');
+  
   const { t } = useLanguage();
 
   const handleCloseOverlay = () => {
@@ -20,22 +24,28 @@ const AppContent: React.FC = () => {
       <Overlay 
         activeSection={activeSection} 
         onClose={handleCloseOverlay} 
-        setActiveSection={setActiveSection} 
+        setActiveSection={setActiveSection}
+        setAiState={setAiState} // Pass setter to Overlay
       />
 
       {/* 3D Scene Canvas */}
       <div className="absolute inset-0 z-0">
         <Canvas
           shadows
-          camera={{ position: [0, 4, 8], fov: 45 }}
+          // Balanced near/far planes for optimal depth precision
+          // near: 0.1 prevents z-fighting artifacts
+          // far: 10000 ensures massive environments are visible on mobile zooming
+          camera={{ position: [0, 4, 8], fov: 45, near: 0.1, far: 10000 }}
           dpr={[1, 2]}
-          gl={{ antialias: true, preserveDrawingBuffer: true }}
+          // ALPHA: FALSE is critical for PostProcessing to work correctly without black screen artifacts
+          gl={{ antialias: true, preserveDrawingBuffer: true, alpha: false }}
         >
           <Suspense fallback={<Loader />}>
             <Experience 
               activeSection={activeSection} 
               setActiveSection={setActiveSection}
               labels={t.labels}
+              aiState={aiState} // Pass state to 3D Scene
             />
           </Suspense>
         </Canvas>
