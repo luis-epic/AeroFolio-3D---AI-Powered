@@ -265,21 +265,24 @@ export const HoloProjector: React.FC<{ aiState: 'idle' | 'thinking' }> = ({ aiSt
   const { actions } = useAnimations(animations, groupRef);
 
   // 1. Hologram Material (Advanced Shader)
-  const shaderMat = useMemo(() => new ShaderMaterial({
-    vertexShader: hologramVertexShader,
-    fragmentShader: hologramFragmentShader,
-    uniforms: {
-      uTime: { value: 0 },
-      uColor: { value: new Color("#00ffff") },
-      uGlitchStrength: { value: 0.1 },
-      uOpacity: { value: 0.8 }
-    },
-    transparent: true,
-    side: DoubleSide,
-    blending: AdditiveBlending,
-    depthWrite: false,
-    wireframe: false
-  }), []);
+  const shaderMat = useMemo(() => {
+    const cyanColor = new Color("#00ffff");
+    return new ShaderMaterial({
+      vertexShader: hologramVertexShader,
+      fragmentShader: hologramFragmentShader,
+      uniforms: {
+        uTime: { value: 0 },
+        uColor: { value: cyanColor.clone() }, // Clone to avoid reference issues
+        uGlitchStrength: { value: 0.1 },
+        uOpacity: { value: 0.8 }
+      },
+      transparent: true,
+      side: DoubleSide,
+      blending: AdditiveBlending,
+      depthWrite: false,
+      wireframe: false
+    });
+  }, []);
 
   // 2. Apply Shader to Model & Handle Animations
   useEffect(() => {
@@ -332,9 +335,17 @@ export const HoloProjector: React.FC<{ aiState: 'idle' | 'thinking' }> = ({ aiSt
          if (ringRef1.current) ringRef1.current.rotation.z += 0.15;
          if (ringRef2.current) ringRef2.current.rotation.z -= 0.10;
     } else {
-         // IDLE MODE
-         shaderMat.uniforms.uColor.value.lerp(new Color("#00ffff"), 0.05);
-         beamMat.uniforms.uColor.value.lerp(new Color("#00ffff"), 0.05);
+         // IDLE MODE - Ensure color stays cyan, don't lerp if already correct
+         const targetColor = new Color("#00ffff");
+         const currentColor = shaderMat.uniforms.uColor.value;
+         // Only lerp if color is significantly different (to avoid yellow tint)
+         if (currentColor.getHex() !== targetColor.getHex()) {
+           shaderMat.uniforms.uColor.value.lerp(targetColor, 0.1);
+         } else {
+           // Ensure it stays cyan
+           shaderMat.uniforms.uColor.value.copy(targetColor);
+         }
+         beamMat.uniforms.uColor.value.lerp(targetColor, 0.1);
 
          if (Math.random() > 0.995) {
              shaderMat.uniforms.uGlitchStrength.value = 0.5;

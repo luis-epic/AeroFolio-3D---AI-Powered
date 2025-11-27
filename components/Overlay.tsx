@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
 import { Section, ChatMessage } from '../types';
 import { generateAIResponse } from '../services/geminiService';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -139,30 +139,36 @@ const ScrambleText: React.FC<{ text: string; className?: string }> = ({ text, cl
 };
 
 // Extracted component to prevent re-renders on parent state change
-const LanguageToggle: React.FC<{ language: Language; toggleLanguage: () => void }> = ({ language, toggleLanguage }) => {
-  const getLanguageLabel = () => {
+const LanguageToggle: React.FC<{ language: Language; toggleLanguage: () => void }> = memo(({ language, toggleLanguage }) => {
+  const languageLabel = useMemo(() => {
     if (language === 'en') return 'ENGLISH';
     if (language === 'es') return 'ESPAÑOL';
     return '中文';
-  };
+  }, [language]);
+
+  const handleClick = useCallback(() => {
+    toggleLanguage();
+    playClickSound();
+  }, [toggleLanguage]);
 
   return (
     <button 
-      onClick={() => { toggleLanguage(); playClickSound(); }}
+      onClick={handleClick}
       onMouseEnter={playHoverSound}
-      className="absolute top-8 right-8 z-50 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white px-3 py-1 rounded-full text-sm font-mono transition-all pointer-events-auto"
+      aria-label={`Switch language. Current: ${languageLabel}`}
+      className="absolute top-8 right-8 z-50 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white px-3 py-1 rounded-full text-sm font-mono transition-all pointer-events-auto focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900"
     >
-      {getLanguageLabel()}
+      {languageLabel}
     </button>
   );
-};
+});
 
 // Recruiter HUD (Hybrid Navigation)
 const RecruiterHUD: React.FC<{ 
   activeSection: Section; 
   onNavigate: (s: Section) => void;
   labels: any; 
-}> = ({ activeSection, onNavigate, labels }) => {
+}> = memo(({ activeSection, onNavigate, labels }) => {
   const navItems: { id: Section; label: string; icon: string }[] = [
     { id: 'home', label: 'HOME', icon: '🏠' },
     { id: 'projects', label: labels.projects, icon: '💻' },
@@ -178,24 +184,26 @@ const RecruiterHUD: React.FC<{
             key={item.id}
             onClick={() => { onNavigate(item.id); playClickSound(); }}
             onMouseEnter={playHoverSound}
+            aria-label={`Navigate to ${item.label}`}
+            aria-current={activeSection === item.id ? 'page' : undefined}
             className={`
-              px-4 py-2 rounded-full text-xs md:text-sm font-bold transition-all flex items-center gap-2
+              px-4 py-2 rounded-full text-xs md:text-sm font-bold transition-all flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900
               ${activeSection === item.id 
                 ? 'bg-blue-600 text-white shadow-lg scale-105' 
                 : 'text-gray-400 hover:text-white hover:bg-white/10'}
             `}
           >
-            <span>{item.icon}</span>
+            <span aria-hidden="true">{item.icon}</span>
             <span className="hidden md:inline">{item.label}</span>
           </button>
         ))}
       </div>
     </div>
   );
-};
+});
 
 // Extracted Header Component to prevent flickering
-const Header: React.FC<{ visible: boolean; t: any }> = ({ visible, t }) => (
+const Header: React.FC<{ visible: boolean; t: any }> = memo(({ visible, t }) => (
   <div className={`absolute top-8 left-8 z-10 pointer-events-none transition-all duration-500 ${visible ? 'opacity-0 translate-y-[-20px]' : 'opacity-100'}`}>
     <h1 className="text-4xl md:text-6xl font-bold text-white tracking-tight">
       <ScrambleText text="Luis Martinez" />
@@ -209,7 +217,7 @@ const Header: React.FC<{ visible: boolean; t: any }> = ({ visible, t }) => (
       </p>
     )}
   </div>
-);
+));
 
 const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSection, setAiState }) => {
   const [visible, setVisible] = useState(false);
@@ -219,6 +227,7 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
   const [prompt, setPrompt] = useState("");
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [isTyping, setIsTyping] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
   // GitHub Data State
@@ -243,6 +252,7 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
     document.addEventListener("visibilitychange", handleVisibilityChange);
     return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
   }, []);
+
 
   // Fetch GitHub Data when Contact section is active
   useEffect(() => {
@@ -291,11 +301,15 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
     window.speechSynthesis.speak(utterance);
   };
 
-  const processMessage = async (text: string) => {
+  const processMessage = useCallback(async (text: string) => {
     if (!text.trim()) return;
     if (typeof window !== 'undefined' && window.speechSynthesis) {
         window.speechSynthesis.cancel();
     }
+    
+    // Clear previous errors
+    setError(null);
+    
     const userMsg: ChatMessage = { role: 'user', text: text };
     setChatHistory(prev => [...prev, userMsg]);
     setPrompt("");
@@ -304,38 +318,96 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
     setIsTyping(true);
     setAiState('thinking'); // Update global state for 3D reactivity
     
-    const responseText = await generateAIResponse(text, language);
-    
-    setChatHistory(prev => [...prev, { role: 'model', text: responseText }]);
-    
-    // Reset Loading States
-    setIsTyping(false);
-    setAiState('idle');
-    
-    speakText(responseText);
-  };
+    try {
+      const responseText = await generateAIResponse(text, language);
+      
+      setChatHistory(prev => [...prev, { role: 'model', text: responseText }]);
+      
+      // Check if response is an error message (contains error keywords)
+      const isErrorResponse = responseText.toLowerCase().includes('error') || 
+                             responseText.toLowerCase().includes('error') ||
+                             responseText.toLowerCase().includes('intenta') ||
+                             responseText.toLowerCase().includes('try again');
+      
+      if (isErrorResponse && !responseText.includes('demo mode')) {
+        setError(responseText);
+      }
+      
+      speakText(responseText);
+    } catch (error) {
+      console.error('Error processing message:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      setError(errorMessage);
+      
+      // Add error message to chat
+      setChatHistory(prev => [...prev, { 
+        role: 'model', 
+        text: language === 'es' 
+          ? "Lo siento, ocurrió un error al procesar tu solicitud. Por favor intenta nuevamente."
+          : language === 'zh'
+          ? "抱歉，处理您的请求时出错。请重试。"
+          : "Sorry, an error occurred while processing your request. Please try again."
+      }]);
+    } finally {
+      // Reset Loading States
+      setIsTyping(false);
+      setAiState('idle');
+    }
+  }, [language, setAiState]);
 
-  const handleSendMessage = async (e: React.FormEvent) => {
+  const handleSendMessage = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     playClickSound();
     processMessage(prompt);
-  };
+  }, [prompt, processMessage]);
 
-  const handleQuickQuestion = (question: string) => {
+  const handleQuickQuestion = useCallback((question: string) => {
     playClickSound();
     processMessage(question);
-  };
+  }, [processMessage]);
 
-  const toggleLanguage = () => {
+  const toggleLanguage = useCallback(() => {
     if (language === 'en') setLanguage('es');
     else if (language === 'es') setLanguage('zh');
     else setLanguage('en');
-  };
+  }, [language, setLanguage]);
 
-  const handleNav = (section: Section) => {
+  const handleNav = useCallback((section: Section) => {
     if (section === 'home') onClose();
     else setActiveSection(section);
-  };
+  }, [onClose, setActiveSection]);
+
+  // Keyboard navigation support (moved after handleNav definition)
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      // Escape key to close overlay
+      if (e.key === 'Escape' && activeSection !== 'home') {
+        onClose();
+        return;
+      }
+      
+      // Arrow keys for navigation (when not in input field)
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
+        return; // Don't interfere with text input
+      }
+      
+      if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+        const sections: Section[] = ['home', 'projects', 'about', 'contact'];
+        const currentIndex = sections.indexOf(activeSection);
+        if (currentIndex === -1) return;
+        
+        const nextIndex = e.key === 'ArrowRight' 
+          ? (currentIndex + 1) % sections.length
+          : (currentIndex - 1 + sections.length) % sections.length;
+        
+        handleNav(sections[nextIndex]);
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [activeSection, onClose, handleNav]);
 
   const handleMicClick = () => {
     playClickSound();
@@ -397,9 +469,10 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
             <button 
               onClick={() => { onClose(); playClickSound(); }}
               onMouseEnter={playHoverSound}
-              className="absolute top-4 right-4 z-50 bg-white/5 hover:bg-red-500/80 border border-white/10 text-white p-2 rounded-full transition-all"
+              aria-label="Close overlay"
+              className="absolute top-4 right-4 z-50 bg-white/5 hover:bg-red-500/80 border border-white/10 text-white p-2 rounded-full transition-all focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-gray-900"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
@@ -479,6 +552,23 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
                 
                 {/* Terminal Output (Chat) */}
                 <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-6 space-y-6 scroll-smooth">
+                  {/* Error Message Display */}
+                  {error && (
+                    <div className="bg-red-500/20 border border-red-500/50 text-red-300 p-4 rounded-lg font-mono text-sm flex items-start gap-3 animate-fade-in">
+                      <span className="text-red-500 text-lg">⚠️</span>
+                      <div className="flex-1">
+                        <div className="text-[10px] uppercase tracking-wider text-red-400/70 mb-1">ERROR</div>
+                        <div>{error}</div>
+                        <button
+                          onClick={() => setError(null)}
+                          className="mt-2 text-xs text-red-400 hover:text-red-300 underline"
+                        >
+                          Dismiss
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  
                   {chatHistory.map((msg, idx) => (
                     <div key={idx} className={`flex w-full ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}>
                       <div className={`relative max-w-[85%] p-5 text-sm font-mono leading-relaxed shadow-lg backdrop-blur-md transition-all duration-300
@@ -531,15 +621,20 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
                       value={prompt}
                       onChange={(e) => setPrompt(e.target.value)}
                       placeholder={isListening ? "Listening..." : t.about.placeholder}
+                      aria-label="Chat input"
+                      aria-describedby="chat-input-description"
                       className={`flex-1 bg-white/5 border border-white/10 rounded-lg px-10 py-3 text-pink-50 focus:outline-none focus:border-pink-500/50 focus:bg-white/10 focus:shadow-[0_0_15px_rgba(236,72,153,0.1)] font-mono text-sm transition-all placeholder:text-gray-600 ${isListening ? 'border-pink-500 animate-pulse' : ''}`}
                     />
+                    <span id="chat-input-description" className="sr-only">Type your message or use voice input</span>
                     
                     {/* Voice Input Button */}
                     <button
                         type="button"
                         onClick={handleMicClick}
                         onMouseEnter={playHoverSound}
-                        className={`p-3 rounded-lg border transition-all ${isListening ? 'bg-red-500/20 border-red-500 text-red-400 animate-pulse' : 'bg-white/5 border-white/10 text-gray-400 hover:text-white hover:bg-white/10'}`}
+                        aria-label={isListening ? "Stop listening" : "Start voice input"}
+                        aria-pressed={isListening}
+                        className={`p-3 rounded-lg border transition-all focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2 focus:ring-offset-gray-900 ${isListening ? 'bg-red-500/20 border-red-500 text-red-400 animate-pulse' : 'bg-white/5 border-white/10 text-gray-400 hover:text-white hover:bg-white/10'}`}
                         title="Voice Input"
                     >
                         {isListening ? (
@@ -555,7 +650,9 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
                       type="submit"
                       onMouseEnter={playHoverSound}
                       disabled={isTyping || !prompt.trim()}
-                      className="bg-pink-600/80 hover:bg-pink-500 disabled:bg-gray-800 disabled:text-gray-600 text-white px-6 py-3 rounded-lg font-mono text-xs uppercase tracking-widest transition-all shadow-lg hover:shadow-pink-500/20"
+                      aria-label="Send message"
+                      aria-busy={isTyping}
+                      className="bg-pink-600/80 hover:bg-pink-500 disabled:bg-gray-800 disabled:text-gray-600 text-white px-6 py-3 rounded-lg font-mono text-xs uppercase tracking-widest transition-all shadow-lg hover:shadow-pink-500/20 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2 focus:ring-offset-gray-900"
                     >
                       {t.about.send}
                     </button>

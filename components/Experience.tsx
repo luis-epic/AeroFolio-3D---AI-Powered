@@ -40,8 +40,9 @@ const Experience: React.FC<ExperienceProps> = ({ activeSection, setActiveSection
     if (controlsRef.current) {
       controlsRef.current.maxPolarAngle = Math.PI / 2;
       controlsRef.current.minDistance = 1.0;
-      // Increased maxDistance to allow freedom without clipping
-      controlsRef.current.maxDistance = 1000;
+      // Very high maxDistance to allow extensive zoom out without black screen
+      // Using a large but finite number (Infinity might cause issues)
+      controlsRef.current.maxDistance = 10000;
     }
   }, []);
 
@@ -115,12 +116,18 @@ const Experience: React.FC<ExperienceProps> = ({ activeSection, setActiveSection
 
   return (
     <>
-      {/* Environment & Background */}
+      {/* Environment & Background - Ensured to always be visible */}
       <color attach="background" args={['#050505']} /> {/* Darker background for contrast */}
       
-      {/* Fog Logic: Pushed 'near' to 500 to prevent mobile black-out. 'far' to 30000. */}
-      <fog attach="fog" args={['#050505', 500, 30000]} />
+      {/* Fog disabled to prevent black screen on zoom out - elements will just get smaller like in reference project */}
+      {/* <fog attach="fog" args={['#050505', 100, 2000]} /> */}
       <Environment preset="city" background={false} />
+      
+      {/* Invisible plane far away to ensure something is always rendered (prevents black screen) */}
+      <mesh position={[0, 0, -1000]} visible={false}>
+        <planeGeometry args={[1, 1]} />
+        <meshBasicMaterial transparent opacity={0} />
+      </mesh>
       
       {/* Lighting Upgrade */}
       {/* Ambient Light set to 2.0 ensures scene is NEVER black, even without point lights */}
@@ -138,27 +145,35 @@ const Experience: React.FC<ExperienceProps> = ({ activeSection, setActiveSection
       <pointLight position={[-10, 5, -10]} intensity={8} color="#3b82f6" distance={100000} />
       <pointLight position={[10, 5, -10]} intensity={8} color="#db2777" distance={100000} />
       
-      {/* Post Processing Effects - Simplified for better performance/visibility */}
-      <EffectComposer enableNormalPass={false}>
-        {/* Bloom creates the glowing effect on screens and neons */}
-        <Bloom 
-            luminanceThreshold={1.2} // Only very bright things glow
-            mipmapBlur 
-            intensity={0.6} 
-            radius={0.6}
-        />
-        {/* Cinematic Glitch Transition */}
-        <Glitch 
-            delay={GLITCH_DELAY} 
-            duration={GLITCH_DURATION} 
-            strength={GLITCH_STRENGTH} 
-            mode={1} // Constant mode when active
-            active={triggerGlitch} 
-            ratio={0.85}
-        />
-        {/* Vignette: Reduced darkness to 0.2 to prevent tunnel vision on mobile */}
-        <Vignette eskil={false} offset={0.1} darkness={0.2} />
-      </EffectComposer>
+      {/* Post Processing Effects - TEMPORARILY DISABLED to test if this causes black screen */}
+      {/* Uncomment below to re-enable post-processing once black screen issue is resolved */}
+      {false && (
+        <EffectComposer 
+          enableNormalPass={false}
+          multisampling={0}
+          resolutionScale={1}
+          renderPriority={0}
+        >
+          {/* Bloom creates the glowing effect on screens and neons */}
+          <Bloom 
+              luminanceThreshold={1.2} // Only very bright things glow
+              mipmapBlur 
+              intensity={0.6} 
+              radius={0.6}
+          />
+          {/* Cinematic Glitch Transition */}
+          <Glitch 
+              delay={GLITCH_DELAY} 
+              duration={GLITCH_DURATION} 
+              strength={GLITCH_STRENGTH} 
+              mode={1} // Constant mode when active
+              active={triggerGlitch} 
+              ratio={0.85}
+          />
+          {/* Vignette disabled to prevent black screen on zoom out */}
+          {/* <Vignette eskil={false} offset={0.1} darkness={0.1} /> */}
+        </EffectComposer>
+      )}
 
       {/* Controls */}
       <CameraControls 
