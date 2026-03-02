@@ -7,6 +7,7 @@ import Overlay from './components/Overlay';
 import Loader from './components/Loader';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import { validateEnv } from './config/env';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 
 // Lazy load only Experience component (Overlay needs to be available immediately)
 const LazyExperience = lazy(() => import('./components/Experience'));
@@ -67,6 +68,7 @@ const AppContent: React.FC = () => {
           </Suspense>
         </Canvas>
       </div>
+      <SpeedInsights />
     </div>
   );
 };
