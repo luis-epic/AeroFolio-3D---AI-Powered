@@ -12,12 +12,18 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     // Define global constant replacements
     define: {
-      'process.env.API_KEY': JSON.stringify(
+      'process.env.GEMINI_API_KEY': JSON.stringify(
         env.GEMINI_API_KEY ||
         process.env.GEMINI_API_KEY ||
+        env.VITE_GEMINI_API_KEY ||
+        process.env.VITE_GEMINI_API_KEY ||
+        ""
+      ),
+      'process.env.API_KEY': JSON.stringify(
+        env.API_KEY ||
+        process.env.API_KEY ||
         env.VITE_API_KEY || 
         process.env.VITE_API_KEY || 
-        process.env.API_KEY || 
         process.env.GOOGLE_API_KEY ||
         "" 
       )
