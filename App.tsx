@@ -6,8 +6,7 @@ import { Section } from './types';
 import Overlay from './components/Overlay';
 import Loader from './components/Loader';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
-
-const Experience = React.lazy(() => import('./components/Experience'));
+import Experience from './components/Experience';
 
 const AppContent: React.FC = () => {
   const [activeSection, setActiveSection] = useState<Section>('home');

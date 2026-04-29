@@ -49,6 +49,14 @@
         background-size: 100% 4px;
       }
     </style>
+    <!-- Shim process to prevent process is not defined errors in prod with Node SDKs -->
+    <script>
+      window.process = {
+        env: {
+          NODE_ENV: 'production'
+        }
+      };
+    </script>
 </head>
   <body>
     <div id="root"></div>

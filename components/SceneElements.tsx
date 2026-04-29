@@ -258,8 +258,8 @@ export const HoloProjector: React.FC<{ aiState: 'idle' | 'thinking' }> = ({ aiSt
   const ringRef1 = useRef<Mesh>(null);
   const ringRef2 = useRef<Mesh>(null);
   
-  // LOAD EXTERNAL GLTF MODEL - Enable Draco via drei's built-in handling
-  const { scene, animations } = useGLTF(ROBOT_MODEL_URL, true);
+  // LOAD EXTERNAL GLTF MODEL without draco since it is standard
+  const { scene, animations } = useGLTF(ROBOT_MODEL_URL);
   
   // Memoize geometries for reuse and performance
   const cylinderGeo = useMemo(() => new CylinderGeometry(0.9, 1.1, 0.2, 8), []);
@@ -396,8 +396,8 @@ export const HoloProjector: React.FC<{ aiState: 'idle' | 'thinking' }> = ({ aiSt
   );
 };
 
-// Preload the model - Added 'true' to match hook usage and support Draco
-useGLTF.preload(ROBOT_MODEL_URL, true);
+// Preload the model
+useGLTF.preload(ROBOT_MODEL_URL);
 
 export const ResumePaper: React.FC = () => {
   const [hovered, setHover] = useState(false);

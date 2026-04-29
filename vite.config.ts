@@ -13,6 +13,7 @@ export default defineConfig(({ mode }) => {
     plugins: [react(), tailwindcss()],
     // Define global constant replacements
     define: {
+      global: 'window',
       'process.env.GEMINI_API_KEY': JSON.stringify(
         env.GEMINI_API_KEY ||
         process.env.GEMINI_API_KEY ||
@@ -33,16 +34,7 @@ export default defineConfig(({ mode }) => {
       outDir: 'dist',
       assetsDir: 'assets',
       sourcemap: false,
-      chunkSizeWarningLimit: 1600,
-      rollupOptions: {
-        output: {
-          manualChunks: {
-            'react-vendor': ['react', 'react-dom'],
-            'three-vendor': ['three', '@react-three/fiber', '@react-three/drei'],
-            'postprocessing-vendor': ['@react-three/postprocessing', 'postprocessing'],
-          }
-        }
-      }
+      chunkSizeWarningLimit: 1600
     }
   }
 })
