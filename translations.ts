@@ -62,6 +62,7 @@ export const TRANSLATIONS = {
       github: "GitHub Profile"
     },
     labels: {
+      home: "HOME",
       projects: "PROJECTS",
       about: "ABOUT / AI",
       contact: "CONTACT"
@@ -131,6 +132,7 @@ export const TRANSLATIONS = {
       github: "Perfil GitHub"
     },
     labels: {
+      home: "INICIO",
       projects: "PROYECTOS",
       about: "SOBRE MI / IA",
       contact: "CONTACTO"
@@ -200,6 +202,7 @@ export const TRANSLATIONS = {
       github: "GitHub 主页"
     },
     labels: {
+      home: "首页",
       projects: "项目",
       about: "关于 / AI",
       contact: "联系方式"

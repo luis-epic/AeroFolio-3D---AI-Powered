@@ -7,24 +7,19 @@ export default defineConfig(({ mode }) => {
   // Set the third parameter to '' to load all env regardless of the `VITE_` prefix.
   const env = loadEnv(mode, (process as any).cwd(), '');
   
-  // Centralized API key resolution (supports multiple variable names)
-  const apiKey = env.VITE_API_KEY || 
-                 env.VITE_GEMINI_API_KEY || 
-                 env.VITE_GOOGLE_API_KEY ||
-                 process.env.VITE_API_KEY || 
-                 process.env.API_KEY || 
-                 process.env.GOOGLE_API_KEY ||
-                 process.env.GEMINI_API_KEY ||
-                 "";
-  
   return {
     plugins: [react()],
-    // Define global constant replacements for backward compatibility
-    // Note: New code should use import.meta.env.VITE_API_KEY or the config/env.ts helper
+    // Define global constant replacements
     define: {
-      'process.env.API_KEY': JSON.stringify(apiKey),
-      // Also expose as VITE_ prefixed for consistency
-      'import.meta.env.VITE_API_KEY': JSON.stringify(apiKey),
+      'process.env.API_KEY': JSON.stringify(
+        env.GEMINI_API_KEY ||
+        process.env.GEMINI_API_KEY ||
+        env.VITE_API_KEY || 
+        process.env.VITE_API_KEY || 
+        process.env.API_KEY || 
+        process.env.GOOGLE_API_KEY ||
+        "" 
+      )
     },
     build: {
       outDir: 'dist',

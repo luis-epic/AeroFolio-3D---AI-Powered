@@ -2,7 +2,7 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { useThree, ThreeElements } from '@react-three/fiber';
 import { Vector2 } from 'three';
-import { CameraControls, Environment, MeshReflectorMaterial, ContactShadows, CameraShake } from '@react-three/drei';
+import { CameraControls, Environment, MeshReflectorMaterial, ContactShadows, CameraShake, BakeShadows, Preload, AdaptiveEvents } from '@react-three/drei';
 import { EffectComposer, Bloom, Vignette, Glitch } from '@react-three/postprocessing';
 import { Physics, RigidBody, CuboidCollider } from '@react-three/rapier';
 import { Laptop, Brain, Smartphone, TechOrbit, ResumePaper, CoffeeMug, HoloProjector } from './SceneElements';
@@ -13,6 +13,7 @@ interface ExperienceProps {
   activeSection: Section;
   setActiveSection: (section: Section) => void;
   labels: {
+    home: string;
     projects: string;
     about: string;
     contact: string;
@@ -40,9 +41,8 @@ const Experience: React.FC<ExperienceProps> = ({ activeSection, setActiveSection
     if (controlsRef.current) {
       controlsRef.current.maxPolarAngle = Math.PI / 2;
       controlsRef.current.minDistance = 1.0;
-      // Very high maxDistance to allow extensive zoom out without black screen
-      // Using a large but finite number (Infinity might cause issues)
-      controlsRef.current.maxDistance = 10000;
+      // Increased maxDistance to allow freedom without clipping
+      controlsRef.current.maxDistance = 1000;
     }
   }, []);
 
@@ -116,22 +116,19 @@ const Experience: React.FC<ExperienceProps> = ({ activeSection, setActiveSection
 
   return (
     <>
-      {/* Environment & Background - Ensured to always be visible */}
+      {/* Environment & Background */}
       <color attach="background" args={['#050505']} /> {/* Darker background for contrast */}
       
-      {/* Fog disabled to prevent black screen on zoom out - elements will just get smaller like in reference project */}
-      {/* <fog attach="fog" args={['#050505', 100, 2000]} /> */}
-      <Environment preset="city" background={false} />
+      <fog attach="fog" args={['#050505', 5, 25]} />
+      <Environment preset="city" background={false} environmentIntensity={0.3} />
       
-      {/* Invisible plane far away to ensure something is always rendered (prevents black screen) */}
-      <mesh position={[0, 0, -1000]} visible={false}>
-        <planeGeometry args={[1, 1]} />
-        <meshBasicMaterial transparent opacity={0} />
-      </mesh>
+      <AdaptiveEvents />
+      <BakeShadows />
+      <Preload all />
       
       {/* Lighting Upgrade */}
-      {/* Ambient Light set to 2.0 ensures scene is NEVER black, even without point lights */}
-      <ambientLight intensity={2.0} />
+      {/* Ambient Light ensures scene is NEVER black, even without point lights */}
+      <ambientLight intensity={1.5} />
       
       <spotLight 
         position={[10, 15, 10]} 
@@ -142,38 +139,31 @@ const Experience: React.FC<ExperienceProps> = ({ activeSection, setActiveSection
         shadow-bias={-0.0001}
       />
       {/* Rim Lights for Cyberpunk edge highlight */}
-      <pointLight position={[-10, 5, -10]} intensity={8} color="#3b82f6" distance={100000} />
-      <pointLight position={[10, 5, -10]} intensity={8} color="#db2777" distance={100000} />
+      <pointLight position={[-10, 5, -10]} intensity={8} color="#3b82f6" distance={20} />
+      <pointLight position={[10, 5, -10]} intensity={8} color="#db2777" distance={20} />
+      {/* Front Light for Desk Items - Ensures they are visible from the camera side */}
+      <pointLight position={[0, 5, 10]} intensity={1.5} color="#ffffff" distance={30} />
       
-      {/* Post Processing Effects - TEMPORARILY DISABLED to test if this causes black screen */}
-      {/* Uncomment below to re-enable post-processing once black screen issue is resolved */}
-      {false && (
-        <EffectComposer 
-          enableNormalPass={false}
-          multisampling={0}
-          resolutionScale={1}
-          renderPriority={0}
-        >
-          {/* Bloom creates the glowing effect on screens and neons */}
-          <Bloom 
-              luminanceThreshold={1.2} // Only very bright things glow
-              mipmapBlur 
-              intensity={0.6} 
-              radius={0.6}
-          />
-          {/* Cinematic Glitch Transition */}
-          <Glitch 
-              delay={GLITCH_DELAY} 
-              duration={GLITCH_DURATION} 
-              strength={GLITCH_STRENGTH} 
-              mode={1} // Constant mode when active
-              active={triggerGlitch} 
-              ratio={0.85}
-          />
-          {/* Vignette disabled to prevent black screen on zoom out */}
-          {/* <Vignette eskil={false} offset={0.1} darkness={0.1} /> */}
-        </EffectComposer>
-      )}
+      {/* Post Processing Effects - Optimized for performance */}
+      <EffectComposer enableNormalPass={false} multisampling={0}>
+        {/* Bloom creates the glowing effect on screens and neons */}
+        <Bloom 
+            luminanceThreshold={1.2} 
+            mipmapBlur={true}
+            intensity={isMobile ? 0.2 : 0.4} 
+            radius={0.4}
+        />
+        {/* Cinematic Glitch Transition - Only active during state changes */}
+        <Glitch 
+            delay={GLITCH_DELAY} 
+            duration={GLITCH_DURATION} 
+            strength={GLITCH_STRENGTH} 
+            mode={1} 
+            active={triggerGlitch} 
+            ratio={0.85}
+        />
+        <Vignette eskil={false} offset={0.1} darkness={isMobile ? 0.05 : 0.2} />
+      </EffectComposer>
 
       {/* Controls */}
       <CameraControls 
@@ -194,34 +184,34 @@ const Experience: React.FC<ExperienceProps> = ({ activeSection, setActiveSection
         decayRate={0.65}
       />
 
-      <Physics gravity={[0, -9.8, 0]}>
+      <Physics gravity={[0, -9.8, 0]} timeStep="vary">
           {/* Floating Desk Platform */}
           <group position={[0, -0.5, 0]}>
             
-            {/* Contact Shadows: Fake ambient occlusion for grounding objects */}
+            {/* Contact Shadows: Lowered resolution to 512 for better performance */}
             <ContactShadows 
-                resolution={1024} 
+                resolution={512} 
                 scale={20} 
-                blur={2} 
+                blur={2.5} 
                 opacity={0.5} 
                 far={10} 
                 color="#000000" 
             />
 
-             {/* Reflective Floor */}
+             {/* Reflective Floor - Lowered resolution to 256 for performance */}
             <RigidBody type="fixed" colliders="cuboid" restitution={0.5} friction={0.5}>
                 <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]}>
                   <planeGeometry args={[50, 50]} />
                   <MeshReflectorMaterial
                     blur={[300, 100]}
-                    resolution={512}
+                    resolution={256}
                     mixBlur={1}
                     mixStrength={50} // Increased reflection strength
                     roughness={1}
                     depthScale={1.2}
                     minDepthThreshold={0.4}
                     maxDepthThreshold={1.4}
-                    color="#101010"
+                    color="#050505"
                     metalness={0.6}
                     mirror={0.7}
                   />

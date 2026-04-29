@@ -1,12 +1,22 @@
 import { Vector3 } from 'three';
-import { Section, ProjectData, ChatMessage } from './utils/validation';
 
-// Re-export types from validation for backward compatibility
-export type { Section, ProjectData, ChatMessage };
+export type Section = 'home' | 'about' | 'projects' | 'contact';
 
 export interface CameraTarget {
   position: [number, number, number];
   target: [number, number, number];
+}
+
+export interface ProjectData {
+  id: number;
+  title: string;
+  tech: string;
+  description: string;
+}
+
+export interface ChatMessage {
+  role: 'user' | 'model';
+  text: string;
 }
 
 export interface AIState {

@@ -22,22 +22,28 @@ export const CAMERA_POSITIONS: Record<Section, CameraTarget> = {
 
 export const MOCK_PROJECTS: ProjectData[] = [
   {
+    id: 0,
+    title: "AeroFolio 3D",
+    tech: "R3F, Gemini AI, TypeScript, Next.js",
+    description: "An immersive spatial web experience merging 3D interactivity with Generative AI. Features a physics-based environment and LLM-powered voice assistant."
+  },
+  {
     id: 1,
-    title: "Neural Vision API",
-    tech: "Python, TensorFlow, FastAPI",
-    description: "Real-time object detection service optimized for edge devices."
+    title: "Neural Vision Edge",
+    tech: "Python, TensorFlow Lite, FastAPI",
+    description: "Serverless computer vision architecture capable of 60 FPS object detection on IoT devices."
   },
   {
     id: 2,
-    title: "EcoData Vis",
-    tech: "React, D3.js, Node.js",
-    description: "Interactive dashboard visualizing global carbon footprint trends."
+    title: "EcoData Geospatial",
+    tech: "React, WebGL, D3.js, Node.js",
+    description: "High-performance dashboard visualizing terabytes of real-time climate data using instanced rendering."
   },
   {
     id: 3,
-    title: "CryptoSentinel",
-    tech: "Solidity, Web3.js, Next.js",
-    description: "DeFi analytics platform with AI-driven anomaly detection."
+    title: "CryptoSentinel DeFi",
+    tech: "Solidity, Graph Protocol, Next.js",
+    description: "Automated smart contract auditor utilizing historical on-chain data to predict liquidity exploits."
   }
 ];
 
