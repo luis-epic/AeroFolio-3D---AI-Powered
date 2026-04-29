@@ -7,6 +7,7 @@ import Experience from './components/Experience';
 import Overlay from './components/Overlay';
 import Loader from './components/Loader';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 
 const AppContent: React.FC = () => {
   const [activeSection, setActiveSection] = useState<Section>('home');
@@ -56,6 +57,7 @@ const AppContent: React.FC = () => {
           </Suspense>
         </Canvas>
       </div>
+      <SpeedInsights />
     </div>
   );
 };
