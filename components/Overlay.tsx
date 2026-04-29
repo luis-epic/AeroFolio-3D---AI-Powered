@@ -658,20 +658,39 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
                       </div>
                     )}
                     
-                    <div className="flex flex-col gap-2 mt-6">
-                      <h4 className="text-left text-xs uppercase tracking-widest text-gray-400 font-mono mb-2 border-b border-white/10 pb-1">Core Directives</h4>
+                    <div className="flex flex-col gap-3 mt-6 w-full">
+                      <h4 className="text-left text-[10px] md:text-xs uppercase tracking-widest text-pink-400 font-mono mb-2 border-b border-white/10 pb-2">Core Directives</h4>
                       
-                      <div className="flex justify-between items-center bg-white/5 px-3 py-2 rounded border border-white/5">
-                        <span className="text-xs text-gray-300 font-mono">React / Next.js</span>
-                        <div className="flex gap-1"><div className="w-2 h-2 bg-pink-500 rounded-[1px]"/><div className="w-2 h-2 bg-pink-500 rounded-[1px]"/><div className="w-2 h-2 bg-pink-500 rounded-[1px]"/><div className="w-2 h-2 bg-pink-500 rounded-[1px]"/><div className="w-2 h-2 bg-pink-500/30 rounded-[1px]"/></div>
-                      </div>
-                      <div className="flex justify-between items-center bg-white/5 px-3 py-2 rounded border border-white/5">
-                        <span className="text-xs text-gray-300 font-mono">Three.js / GLSL</span>
-                        <div className="flex gap-1"><div className="w-2 h-2 bg-pink-500 rounded-[1px]"/><div className="w-2 h-2 bg-pink-500 rounded-[1px]"/><div className="w-2 h-2 bg-pink-500 rounded-[1px]"/><div className="w-2 h-2 bg-pink-500/30 rounded-[1px]"/><div className="w-2 h-2 bg-pink-500/30 rounded-[1px]"/></div>
-                      </div>
-                      <div className="flex justify-between items-center bg-white/5 px-3 py-2 rounded border border-white/5">
-                        <span className="text-xs text-gray-300 font-mono">Generative AI</span>
-                        <div className="flex gap-1"><div className="w-2 h-2 bg-pink-500 rounded-[1px]"/><div className="w-2 h-2 bg-pink-500 rounded-[1px]"/><div className="w-2 h-2 bg-pink-500 rounded-[1px]"/><div className="w-2 h-2 bg-pink-500/30 rounded-[1px]"/><div className="w-2 h-2 bg-pink-500/30 rounded-[1px]"/></div>
+                      <div className="space-y-4">
+                        <div>
+                           <div className="flex justify-between text-[10px] font-mono text-gray-300 mb-1">
+                             <span>React / Next.js</span>
+                             <span className="text-pink-400">90%</span>
+                           </div>
+                           <div className="w-full bg-white/10 rounded-full h-1.5 shadow-inner">
+                             <div className="bg-gradient-to-r from-pink-600 to-pink-400 h-1.5 rounded-full shadow-[0_0_8px_#ec4899]" style={{ width: '90%' }}></div>
+                           </div>
+                        </div>
+
+                        <div>
+                           <div className="flex justify-between text-[10px] font-mono text-gray-300 mb-1">
+                             <span>Three.js / WebGL</span>
+                             <span className="text-pink-400">80%</span>
+                           </div>
+                           <div className="w-full bg-white/10 rounded-full h-1.5 shadow-inner">
+                             <div className="bg-gradient-to-r from-pink-600 to-pink-400 h-1.5 rounded-full shadow-[0_0_8px_#ec4899]" style={{ width: '80%' }}></div>
+                           </div>
+                        </div>
+                        
+                        <div>
+                           <div className="flex justify-between text-[10px] font-mono text-gray-300 mb-1">
+                             <span>Generative AI</span>
+                             <span className="text-pink-400">85%</span>
+                           </div>
+                           <div className="w-full bg-white/10 rounded-full h-1.5 shadow-inner">
+                             <div className="bg-gradient-to-r from-pink-600 to-pink-400 h-1.5 rounded-full shadow-[0_0_8px_#ec4899]" style={{ width: '85%' }}></div>
+                           </div>
+                        </div>
                       </div>
                     </div>
 
