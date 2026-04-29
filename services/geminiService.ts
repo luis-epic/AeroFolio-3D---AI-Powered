@@ -10,11 +10,8 @@ declare const process: {
   };
 };
 
-// Access the API key. In AI Studio it's process.env.GEMINI_API_KEY. On Vercel, we can load it from import.meta.env.VITE_GEMINI_API_KEY.
-const apiKey = (typeof process !== 'undefined' && process.env && process.env.GEMINI_API_KEY) 
-  || (typeof process !== 'undefined' && process.env && process.env.API_KEY)
-  || (typeof import.meta !== 'undefined' && (import.meta as any).env ? (import.meta as any).env.VITE_GEMINI_API_KEY : '') 
-  || '';
+// The API key must be obtained exclusively from the environment variable process.env.GEMINI_API_KEY
+const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY || '';
 
 let ai: GoogleGenAI | null = null;
 

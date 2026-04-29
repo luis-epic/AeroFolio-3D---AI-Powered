@@ -3,10 +3,11 @@ import React, { useState, Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { PerformanceMonitor, AdaptiveDpr } from '@react-three/drei';
 import { Section } from './types';
-import Experience from './components/Experience';
 import Overlay from './components/Overlay';
 import Loader from './components/Loader';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
+
+const Experience = React.lazy(() => import('./components/Experience'));
 
 const AppContent: React.FC = () => {
   const [activeSection, setActiveSection] = useState<Section>('home');

@@ -637,7 +637,7 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
                   {/* Status Indicator */}
                   <div className="absolute top-4 right-4 flex items-center gap-1">
                     <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_5px_#22c55e]"></span>
-                    <span className="text-[8px] font-mono text-green-500 tracking-widest">ONLINE</span>
+                    <span className="text-[8px] font-mono text-green-500 tracking-widest">{t.stats.online}</span>
                   </div>
 
                   <div className="mt-8 md:mt-2 text-center">
@@ -659,12 +659,12 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
                     )}
                     
                     <div className="flex flex-col gap-3 mt-6 w-full">
-                      <h4 className="text-left text-[10px] md:text-xs uppercase tracking-widest text-pink-400 font-mono mb-2 border-b border-white/10 pb-2">Core Directives</h4>
+                      <h4 className="text-left text-[10px] md:text-xs uppercase tracking-widest text-pink-400 font-mono mb-2 border-b border-white/10 pb-2">{t.stats.coreDirectives}</h4>
                       
                       <div className="space-y-4">
                         <div>
                            <div className="flex justify-between text-[10px] font-mono text-gray-300 mb-1">
-                             <span>React / Next.js</span>
+                             <span>{t.stats.react}</span>
                              <span className="text-pink-400">90%</span>
                            </div>
                            <div className="w-full bg-white/10 rounded-full h-1.5 shadow-inner">
@@ -674,7 +674,7 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
 
                         <div>
                            <div className="flex justify-between text-[10px] font-mono text-gray-300 mb-1">
-                             <span>Three.js / WebGL</span>
+                             <span>{t.stats.threejs}</span>
                              <span className="text-pink-400">80%</span>
                            </div>
                            <div className="w-full bg-white/10 rounded-full h-1.5 shadow-inner">
@@ -684,7 +684,7 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
                         
                         <div>
                            <div className="flex justify-between text-[10px] font-mono text-gray-300 mb-1">
-                             <span>Generative AI</span>
+                             <span>{t.stats.ai}</span>
                              <span className="text-pink-400">85%</span>
                            </div>
                            <div className="w-full bg-white/10 rounded-full h-1.5 shadow-inner">
@@ -695,11 +695,11 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
                     </div>
 
                     <div className="mt-8 text-left">
-                       <h4 className="text-xs uppercase tracking-widest text-gray-400 font-mono mb-2 border-b border-white/10 pb-1">System Load</h4>
+                       <h4 className="text-xs uppercase tracking-widest text-gray-400 font-mono mb-2 border-b border-white/10 pb-1">{t.stats.systemLoad}</h4>
                        <div className="w-full bg-white/5 rounded-full h-1.5 mb-1 mt-3">
                           <div className="bg-pink-500 h-1.5 rounded-full" style={{ width: '85%' }}></div>
                        </div>
-                       <p className="text-[10px] text-gray-500 font-mono text-right">CPU: 85% - OPTIMAL</p>
+                       <p className="text-[10px] text-gray-500 font-mono text-right">{t.stats.cpuOptimal}</p>
                     </div>
                   </div>
                 </div>
@@ -721,7 +721,7 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
                      <span className="w-2 h-2 bg-emerald-500 animate-pulse rounded-full shadow-[0_0_8px_#10b981]"></span>
                      <ScrambleText text={t.contact.title} />
                   </h2>
-                  <p className="text-[10px] text-emerald-300/60 uppercase tracking-[0.2em] ml-5">SIGNAL.STATUS: OPEN</p>
+                  <p className="text-[10px] text-emerald-300/60 uppercase tracking-[0.2em] ml-5">{t.stats.signalOpen}</p>
                 </div>
 
                 <div className="flex-1 flex flex-col items-center justify-center p-8 relative">
@@ -733,18 +733,22 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
 
                     {/* LIVE GITHUB STATS WIDGET */}
                     {githubData ? (
-                        <div className="mb-6 w-full max-w-sm grid grid-cols-2 gap-2">
-                           <div className="bg-emerald-900/20 border border-emerald-500/20 p-2 text-center rounded">
+                        <div className="mb-6 w-full max-w-sm grid grid-cols-3 gap-2">
+                           <div className="bg-emerald-900/20 border border-emerald-500/20 p-2 text-center rounded hover:bg-emerald-800/30 transition-colors">
                                <div className="text-lg font-bold text-white font-mono">{githubData.public_repos}</div>
-                               <div className="text-[9px] text-emerald-400 uppercase tracking-widest">Repositories</div>
+                               <div className="text-[8px] md:text-[9px] text-emerald-400 uppercase tracking-widest">{t.stats.repos}</div>
                            </div>
-                           <div className="bg-emerald-900/20 border border-emerald-500/20 p-2 text-center rounded">
+                           <div className="bg-emerald-900/20 border border-emerald-500/20 p-2 text-center rounded hover:bg-emerald-800/30 transition-colors">
+                               <div className="text-lg font-bold text-white font-mono">{githubData.stars || 0}</div>
+                               <div className="text-[8px] md:text-[9px] text-emerald-400 uppercase tracking-widest">{t.stats.stars}</div>
+                           </div>
+                           <div className="bg-emerald-900/20 border border-emerald-500/20 p-2 text-center rounded hover:bg-emerald-800/30 transition-colors">
                                <div className="text-lg font-bold text-white font-mono">{githubData.followers}</div>
-                               <div className="text-[9px] text-emerald-400 uppercase tracking-widest">Followers</div>
+                               <div className="text-[8px] md:text-[9px] text-emerald-400 uppercase tracking-widest">{t.stats.followers}</div>
                            </div>
                         </div>
                     ) : (
-                        <div className="mb-6 h-12 w-full max-w-sm bg-emerald-900/10 animate-pulse rounded border border-emerald-500/10 flex items-center justify-center text-[9px] text-emerald-500">FETCHING DATA...</div>
+                        <div className="mb-6 h-12 w-full max-w-sm bg-emerald-900/10 animate-pulse rounded border border-emerald-500/10 flex items-center justify-center text-[9px] text-emerald-500">{t.stats.fetching}</div>
                     )}
 
                     <p className="text-emerald-100 mb-6 max-w-md font-mono text-sm text-center bg-black/40 p-4 border-l-2 border-emerald-500">

@@ -70,6 +70,20 @@ export const TRANSLATIONS = {
     instructions: {
       home: "Click objects to navigate",
       section: "Press X or Click Close to return"
+    },
+    stats: {
+      online: "ONLINE",
+      coreDirectives: "Core Directives",
+      react: "React / Next.js",
+      threejs: "Three.js / WebGL",
+      ai: "Generative AI",
+      systemLoad: "System Load",
+      cpuOptimal: "CPU: 85% - OPTIMAL",
+      signalOpen: "SIGNAL.STATUS: OPEN",
+      repos: "Repositories",
+      followers: "Followers",
+      stars: "Stars",
+      fetching: "FETCHING DATA..."
     }
   },
   es: {
@@ -140,6 +154,20 @@ export const TRANSLATIONS = {
     instructions: {
       home: "Haz clic en los objetos para navegar",
       section: "Presiona X o Cierra para volver"
+    },
+    stats: {
+      online: "EN LÍNEA",
+      coreDirectives: "Directivas Principales",
+      react: "React / Next.js",
+      threejs: "Three.js / WebGL",
+      ai: "IA Generativa",
+      systemLoad: "Carga del Sistema",
+      cpuOptimal: "CPU: 85% - ÓPTIMO",
+      signalOpen: "ESTADO.SEÑAL: ABIERTO",
+      repos: "Repositorios",
+      followers: "Seguidores",
+      stars: "Estrellas",
+      fetching: "OBTENIENDO DATOS..."
     }
   },
   zh: {
@@ -210,6 +238,20 @@ export const TRANSLATIONS = {
     instructions: {
       home: "点击物体进行导航",
       section: "按 X 或点击关闭以返回"
+    },
+    stats: {
+      online: "在线",
+      coreDirectives: "核心指令",
+      react: "React / Next.js",
+      threejs: "Three.js / WebGL",
+      ai: "生成式 AI",
+      systemLoad: "系统负载",
+      cpuOptimal: "CPU: 85% - 最佳",
+      signalOpen: "信号状态: 开启",
+      repos: "代码仓库",
+      followers: "关注者",
+      stars: "星标",
+      fetching: "获取数据中..."
     }
   }
 };
