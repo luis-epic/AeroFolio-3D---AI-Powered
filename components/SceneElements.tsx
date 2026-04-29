@@ -1,8 +1,9 @@
 
 import React, { useRef, useState, useMemo, useEffect } from 'react';
 import { useFrame, ThreeElements } from '@react-three/fiber';
-import { Mesh, Group, Vector3, Color, ShaderMaterial, DoubleSide, AdditiveBlending, BackSide, FrontSide, SkinnedMesh } from 'three';
+import { Mesh, Group, Vector3, Color, ShaderMaterial, DoubleSide, AdditiveBlending, BackSide, FrontSide, SkinnedMesh, CylinderGeometry, TorusGeometry, BoxGeometry, PlaneGeometry, SphereGeometry, CircleGeometry, IcosahedronGeometry, OctahedronGeometry } from 'three';
 import { Text, Float, MeshTransmissionMaterial, RoundedBox, Billboard, Sparkles, useGLTF, useAnimations } from '@react-three/drei';
+import { useLanguage } from '../contexts/LanguageContext';
 import { RigidBody, RapierRigidBody, CylinderCollider } from '@react-three/rapier';
 import { playHoverSound, playClickSound, playTypeSound } from '../utils/soundEngine';
 
@@ -250,7 +251,7 @@ const beamFragmentShader = `
 `;
 
 // Use jsDelivr CDN for better reliability and CORS handling than raw.githubusercontent
-const MODEL_URL = 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@master/examples/models/gltf/RobotExpressive/RobotExpressive.glb';
+const ROBOT_MODEL_URL = 'https://cdn.jsdelivr.net/gh/mrdoob/three.js@master/examples/models/gltf/RobotExpressive/RobotExpressive.glb';
 
 export const HoloProjector: React.FC<{ aiState: 'idle' | 'thinking' }> = ({ aiState }) => {
   const groupRef = useRef<Group>(null);
@@ -258,31 +259,35 @@ export const HoloProjector: React.FC<{ aiState: 'idle' | 'thinking' }> = ({ aiSt
   const ringRef2 = useRef<Mesh>(null);
   
   // LOAD EXTERNAL GLTF MODEL - Enable Draco via drei's built-in handling
-  const { scene, animations } = useGLTF(MODEL_URL, true);
+  const { scene, animations } = useGLTF(ROBOT_MODEL_URL, true);
   
+  // Memoize geometries for reuse and performance
+  const cylinderGeo = useMemo(() => new CylinderGeometry(0.9, 1.1, 0.2, 8), []);
+  const cylinderGeoThin = useMemo(() => new CylinderGeometry(0.75, 0.75, 0.05, 16), []);
+  const beamGeo = useMemo(() => new CylinderGeometry(0.8, 0.7, 3.0, 16, 1, true), []);
+  const torusGeo1 = useMemo(() => new TorusGeometry(1.5, 0.005, 8, 48), []);
+  const torusGeo2 = useMemo(() => new TorusGeometry(1.2, 0.008, 8, 32), []);
+
   // Clone the scene to avoid modifying the cached asset, ensuring safety across re-mounts
   const clonedScene = useMemo(() => scene.clone(), [scene]);
   const { actions } = useAnimations(animations, groupRef);
 
   // 1. Hologram Material (Advanced Shader)
-  const shaderMat = useMemo(() => {
-    const cyanColor = new Color("#00ffff");
-    return new ShaderMaterial({
-      vertexShader: hologramVertexShader,
-      fragmentShader: hologramFragmentShader,
-      uniforms: {
-        uTime: { value: 0 },
-        uColor: { value: cyanColor.clone() }, // Clone to avoid reference issues
-        uGlitchStrength: { value: 0.1 },
-        uOpacity: { value: 0.8 }
-      },
-      transparent: true,
-      side: DoubleSide,
-      blending: AdditiveBlending,
-      depthWrite: false,
-      wireframe: false
-    });
-  }, []);
+  const shaderMat = useMemo(() => new ShaderMaterial({
+    vertexShader: hologramVertexShader,
+    fragmentShader: hologramFragmentShader,
+    uniforms: {
+      uTime: { value: 0 },
+      uColor: { value: new Color("#00ffff") },
+      uGlitchStrength: { value: 0.1 },
+      uOpacity: { value: 0.8 }
+    },
+    transparent: true,
+    side: DoubleSide,
+    blending: AdditiveBlending,
+    depthWrite: false,
+    wireframe: false
+  }), []);
 
   // 2. Apply Shader to Model & Handle Animations
   useEffect(() => {
@@ -335,17 +340,9 @@ export const HoloProjector: React.FC<{ aiState: 'idle' | 'thinking' }> = ({ aiSt
          if (ringRef1.current) ringRef1.current.rotation.z += 0.15;
          if (ringRef2.current) ringRef2.current.rotation.z -= 0.10;
     } else {
-         // IDLE MODE - Ensure color stays cyan, don't lerp if already correct
-         const targetColor = new Color("#00ffff");
-         const currentColor = shaderMat.uniforms.uColor.value;
-         // Only lerp if color is significantly different (to avoid yellow tint)
-         if (currentColor.getHex() !== targetColor.getHex()) {
-           shaderMat.uniforms.uColor.value.lerp(targetColor, 0.1);
-         } else {
-           // Ensure it stays cyan
-           shaderMat.uniforms.uColor.value.copy(targetColor);
-         }
-         beamMat.uniforms.uColor.value.lerp(targetColor, 0.1);
+         // IDLE MODE
+         shaderMat.uniforms.uColor.value.lerp(new Color("#00ffff"), 0.05);
+         beamMat.uniforms.uColor.value.lerp(new Color("#00ffff"), 0.05);
 
          if (Math.random() > 0.995) {
              shaderMat.uniforms.uGlitchStrength.value = 0.5;
@@ -367,33 +364,28 @@ export const HoloProjector: React.FC<{ aiState: 'idle' | 'thinking' }> = ({ aiSt
     <group position={[0, -0.8, -5.0]} scale={1.4}> 
       
       {/* --- BASE --- */}
-      <mesh receiveShadow position={[0, 0.1, 0]}>
-         <cylinderGeometry args={[0.9, 1.1, 0.2, 8]} />
+      <mesh receiveShadow position={[0, 0.1, 0]} geometry={cylinderGeo}>
          <meshStandardMaterial color="#0f172a" metalness={0.9} roughness={0.2} />
       </mesh>
-      <mesh position={[0, 0.21, 0]}>
-         <cylinderGeometry args={[0.75, 0.75, 0.05, 32]} />
+      <mesh position={[0, 0.21, 0]} geometry={cylinderGeoThin}>
          <meshBasicMaterial color={holoColor} toneMapped={false} />
       </mesh>
 
       {/* --- PROJECTION BEAM --- */}
-      <mesh position={[0, 1.5, 0]}>
-        <cylinderGeometry args={[0.8, 0.7, 3.0, 32, 1, true]} />
+      <mesh position={[0, 1.5, 0]} geometry={beamGeo}>
         <primitive object={beamMat} attach="material" />
       </mesh>
 
       {/* --- DATA RINGS --- */}
-      <mesh ref={ringRef1} position={[0, 1.5, 0]} rotation={[Math.PI/2, 0, 0]}>
-         <torusGeometry args={[1.5, 0.005, 16, 100]} />
+      <mesh ref={ringRef1} position={[0, 1.5, 0]} rotation={[Math.PI/2, 0, 0]} geometry={torusGeo1}>
          <meshBasicMaterial color={holoColor} transparent opacity={0.3} blending={AdditiveBlending} />
       </mesh>
-      <mesh ref={ringRef2} position={[0, 1.2, 0]} rotation={[Math.PI/2.2, 0, 0]}>
-         <torusGeometry args={[1.2, 0.008, 16, 100]} />
+      <mesh ref={ringRef2} position={[0, 1.2, 0]} rotation={[Math.PI/2.2, 0, 0]} geometry={torusGeo2}>
          <meshBasicMaterial color="#ec4899" transparent opacity={0.2} blending={AdditiveBlending} />
       </mesh>
 
       {/* --- PARTICLES --- */}
-      <Sparkles position={[0, 1.5, 0]} scale={[1, 3, 1]} count={60} speed={1.5} color={holoColor} size={6} opacity={0.8} noise={0.5} />
+      <Sparkles position={[0, 1.5, 0]} scale={[1, 3, 1]} count={30} speed={1.2} color={holoColor} size={4} opacity={0.6} noise={0.5} />
 
       {/* --- 3D MODEL AVATAR (Loaded GLB) --- */}
       <group ref={groupRef} position={[0, 0.2, 0]} scale={0.4}>
@@ -405,104 +397,102 @@ export const HoloProjector: React.FC<{ aiState: 'idle' | 'thinking' }> = ({ aiSt
 };
 
 // Preload the model - Added 'true' to match hook usage and support Draco
-useGLTF.preload(MODEL_URL, true);
+useGLTF.preload(ROBOT_MODEL_URL, true);
 
 export const ResumePaper: React.FC = () => {
   const [hovered, setHover] = useState(false);
-  const groupRef = useRef<Group>(null);
   useHoverDispatcher(hovered);
 
-  const handleDownload = (e: any) => {
+  // Memoize geometries
+  const stackGeo = useMemo(() => new BoxGeometry(0.62, 0.02, 0.87), []);
+  const topGeo = useMemo(() => new BoxGeometry(0.6, 0.01, 0.85), []);
+  const planeGeo = useMemo(() => new PlaneGeometry(0.45, 0.5), []);
+  const iconGeo = useMemo(() => new PlaneGeometry(0.12, 0.12), []);
+
+  const handleClick = (e: any) => {
     e.stopPropagation();
     playClickSound();
-    alert("Downloading Resume.pdf...");
+    // Simulate opening/downloading
+    window.open('https://luismartinez.dev/cv.pdf', '_blank');
   };
-
-  useFrame((state) => {
-    if (groupRef.current) {
-      const targetY = hovered ? 0.05 : 0;
-      groupRef.current.position.y += (targetY - groupRef.current.position.y) * 0.1;
-    }
-  });
 
   return (
     <group 
-      ref={groupRef} 
-      position={[1.2, 0.01, 0.8]} 
-      rotation={[0, -0.2, 0]}
-      onClick={handleDownload}
-      onPointerOver={() => { setHover(true); playHoverSound(); }}
-      onPointerOut={() => setHover(false)}
+        position={[1.1, 0.4, 1.2]} 
+        rotation={[0, -0.4, 0]}
     >
-      <mesh>
-        <boxGeometry args={[0.6, 0.01, 0.85]} />
-        <meshStandardMaterial color={hovered ? "#ffffff" : "#f3f4f6"} />
-      </mesh>
-      
-      <Text position={[0, 0.011, -0.3]} rotation={[-Math.PI / 2, 0, 0]} fontSize={0.08} color="#000">RESUME</Text>
-      <mesh position={[0, 0.011, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-         <planeGeometry args={[0.4, 0.4]} />
-         <meshBasicMaterial color="#ccc" />
-      </mesh>
-      
-      {hovered && (
-         <Text position={[0, 0.2, 0]} fontSize={0.08} color="#3b82f6" outlineWidth={0.005} outlineColor="#fff">Click to Download</Text>
-      )}
+      <Float speed={1.5} rotationIntensity={0.2} floatIntensity={0.4}>
+        <group 
+          onClick={handleClick}
+          onPointerOver={() => { setHover(true); playHoverSound(); }}
+          onPointerOut={() => setHover(false)}
+        >
+          {/* Paper Stack Effect */}
+          <mesh position={[0, -0.01, 0]} geometry={stackGeo}>
+            <meshStandardMaterial color="#d1d5db" />
+          </mesh>
+          <mesh geometry={topGeo}>
+            <meshStandardMaterial color={hovered ? "#ffffff" : "#f3f4f6"} />
+          </mesh>
+          
+          <mesh position={[0, 0.011, 0.05]} rotation={[-Math.PI / 2, 0, 0]} geometry={planeGeo}>
+             <meshBasicMaterial color="#e5e7eb" transparent opacity={0.6} />
+          </mesh>
+
+          {/* Icon/Profile Pic Placeholder */}
+          <mesh position={[-0.18, 0.012, -0.3]} rotation={[-Math.PI / 2, 0, 0]} geometry={iconGeo}>
+             <meshBasicMaterial color="#3b82f6" />
+          </mesh>
+        </group>
+      </Float>
     </group>
   );
 };
 
 const SparkleSteam = () => (
     <group position={[0, 0.25, 0]}>
-        <Sparkles count={10} scale={[0.1, 0.3, 0.1]} size={3} speed={0.8} opacity={0.4} color="#aaa" noise={0.5} />
+        <Sparkles count={5} scale={[0.1, 0.3, 0.1]} size={2} speed={0.8} opacity={0.3} color="#aaa" noise={0.5} />
     </group>
 )
 
 export const CoffeeMug: React.FC = () => {
-  const rigidBodyRef = useRef<RapierRigidBody>(null);
   const [hovered, setHover] = useState(false);
   
   useHoverDispatcher(hovered);
 
-  const push = () => {
-    playClickSound();
-    if (rigidBodyRef.current) {
-        // Apply a random impulse to the physics body
-        const xImpulse = (Math.random() - 0.5) * 0.02;
-        const zImpulse = (Math.random() - 0.5) * 0.02;
-        rigidBodyRef.current.applyImpulse({ x: xImpulse, y: 0.02, z: zImpulse }, true);
-        rigidBodyRef.current.applyTorqueImpulse({ x: 0.001, y: 0.001, z: 0.001 }, true);
-    }
-  };
+  // Memoize geometries with reduced segments
+  const mugGeo = useMemo(() => new CylinderGeometry(0.14, 0.12, 0.35, 16), []);
+  const coffeeGeo = useMemo(() => new CircleGeometry(0.12, 16), []);
+  const handleGeo = useMemo(() => new TorusGeometry(0.09, 0.025, 6, 12, Math.PI), []);
 
   return (
-    <RigidBody 
-        ref={rigidBodyRef} 
-        position={[-1.2, 0.5, 0.8]} 
-        colliders="hull" 
-        restitution={0.2} 
-        friction={0.8}
+    <group 
+        position={[-1.1, 0.4, 1.2]} 
+        rotation={[0, 0.5, 0]}
     >
+       <Float speed={2} rotationIntensity={0.5} floatIntensity={0.4}>
         <group
-          onClick={(e) => { e.stopPropagation(); push(); }}
+          onClick={(e) => { e.stopPropagation(); playClickSound(); }}
           onPointerOver={() => { setHover(true); playHoverSound(); }}
           onPointerOut={() => setHover(false)}
         >
-          <mesh position={[0, 0.15, 0]}>
-            <cylinderGeometry args={[0.12, 0.1, 0.3, 32]} />
-            <meshStandardMaterial color="#1f2937" roughness={0.5} />
+          {/* Mug Base */}
+          <mesh position={[0, 0.15, 0]} geometry={mugGeo}>
+            <meshStandardMaterial color="#1f2937" roughness={0.3} metalness={0.8} />
           </mesh>
-          <mesh position={[0, 0.28, 0]} rotation={[-Math.PI/2, 0, 0]}>
-             <circleGeometry args={[0.1]} />
-             <meshStandardMaterial color="#3c2f2f" roughness={0.2} />
+          {/* Coffee Surface */}
+          <mesh position={[0, 0.31, 0]} rotation={[-Math.PI/2, 0, 0]} geometry={coffeeGeo}>
+             <meshStandardMaterial color="#3c2f2f" roughness={0.2} emissive="#3c2f2f" emissiveIntensity={0.2} />
           </mesh>
-          <mesh position={[0.12, 0.15, 0]} rotation={[0, 0, -Math.PI/2]}>
-            <torusGeometry args={[0.08, 0.02, 8, 16, Math.PI]} />
-            <meshStandardMaterial color="#1f2937" />
+          {/* Handle */}
+          <mesh position={[0.14, 0.15, 0]} rotation={[0, 0, -Math.PI/2]} geometry={handleGeo}>
+            <meshStandardMaterial color="#1f2937" metalness={0.8} />
           </mesh>
+          
           <SparkleSteam />
         </group>
-    </RigidBody>
+       </Float>
+    </group>
   );
 };
 
@@ -514,8 +504,10 @@ interface TechOrbitProps {
 const TechItem = ({ index, total, tech, active, parentHovered }: any) => {
   const ref = useRef<Group>(null);
   
-  // OPTIMIZATION: Use useMemo to prevent creating new Vector3 on every render
+  // OPTIMIZATION: Use useMemo to prevent creating new objects on every render
   const vec = useMemo(() => new Vector3(), []);
+  const sphereGeo = useMemo(() => new SphereGeometry(0.12, 16, 16), []);
+  const ringGeo = useMemo(() => new TorusGeometry(0.15, 0.01, 8, 24), []);
 
   useFrame((state) => {
     if (!ref.current) return;
@@ -546,15 +538,13 @@ const TechItem = ({ index, total, tech, active, parentHovered }: any) => {
     <group ref={ref}>
       <Billboard follow={true} lockX={false} lockY={false} lockZ={false}>
         <Float speed={ active ? 2 : 0} rotationIntensity={0.2} floatIntensity={0.2}>
-          <mesh position={[0, 0.15, 0]}>
-            <sphereGeometry args={[0.12, 32, 32]} />
+          <mesh position={[0, 0.15, 0]} geometry={sphereGeo}>
             <meshStandardMaterial color="#1f2937" roughness={0.3} metalness={0.8} />
           </mesh>
-          <mesh position={[0, 0.15, 0]} rotation={[Math.PI / 2, 0, 0]}>
-            <torusGeometry args={[0.15, 0.01, 16, 32]} />
+          <mesh position={[0, 0.15, 0]} rotation={[Math.PI / 2, 0, 0]} geometry={ringGeo}>
             <meshBasicMaterial color={tech.color} toneMapped={false} />
           </mesh>
-          <Text position={[0, -0.1, 0]} fontSize={0.15} color={tech.color} anchorX="center" anchorY="top" outlineWidth={0.005} outlineColor="black">
+          <Text position={[0, -0.1, 0]} fontSize={0.15} color={tech.color} anchorX="center" anchorY="top">
             {tech.label}
           </Text>
         </Float>
@@ -646,6 +636,14 @@ export const Laptop: React.FC<LaptopProps> = ({ onClick, active, label, onHoverC
   const groupRef = useRef<Group>(null);
   const screenRef = useRef<Group>(null);
   const [hovered, setHover] = useState(false);
+  
+  // Memoize geometries for performance
+  const chassisGeo = useMemo(() => new BoxGeometry(1.5, 0.06, 1), []);
+  const screenGeo = useMemo(() => new BoxGeometry(1.5, 1.0, 0.04), []);
+  const screenSurfaceGeo = useMemo(() => new PlaneGeometry(1.46, 0.96), []);
+  const trackpadGeo = useMemo(() => new PlaneGeometry(0.6, 0.32), []);
+  const keyboardAreaGeo = useMemo(() => new PlaneGeometry(1.3, 0.45), []);
+  
   useHoverDispatcher(hovered);
 
   const handlePointerOver = () => {
@@ -674,13 +672,13 @@ export const Laptop: React.FC<LaptopProps> = ({ onClick, active, label, onHoverC
   return (
     <group ref={groupRef} onClick={(e) => { e.stopPropagation(); onClick(); playClickSound(); }} onPointerOver={handlePointerOver} onPointerOut={handlePointerOut}>
       <group position={[0, 0, 0]}>
-        <RoundedBox args={[1.5, 0.06, 1]} radius={0.01} smoothness={4}><meshStandardMaterial color={chassisColor} roughness={0.4} metalness={0.8} /></RoundedBox>
-        <mesh position={[0, 0.031, 0.3]} rotation={[-Math.PI / 2, 0, 0]}>
-          <planeGeometry args={[0.6, 0.32]} />
+        <mesh geometry={chassisGeo} position={[0, 0, 0]}>
+            <meshStandardMaterial color={chassisColor} roughness={0.4} metalness={0.8} />
+        </mesh>
+        <mesh position={[0, 0.031, 0.3]} rotation={[-Math.PI / 2, 0, 0]} geometry={trackpadGeo}>
           <meshPhysicalMaterial color="#334155" roughness={0.2} metalness={0.5} clearcoat={0.5} />
         </mesh>
-        <mesh position={[0, 0.031, -0.15]} rotation={[-Math.PI / 2, 0, 0]}>
-          <planeGeometry args={[1.3, 0.45]} />
+        <mesh position={[0, 0.031, -0.15]} rotation={[-Math.PI / 2, 0, 0]} geometry={keyboardAreaGeo}>
           <meshStandardMaterial color="#111827" roughness={0.8} metalness={0.2} />
         </mesh>
         <group position={[0, 0.035, -0.15]}>
@@ -698,11 +696,10 @@ export const Laptop: React.FC<LaptopProps> = ({ onClick, active, label, onHoverC
          <meshStandardMaterial color="#0f172a" metalness={0.9} roughness={0.2} />
       </mesh>
       <group ref={screenRef} position={[0, 0.04, -0.48]} rotation={[targetRotation, 0, 0]}> 
-        <RoundedBox args={[1.5, 1.0, 0.04]} radius={0.01} smoothness={4} position={[0, 0.5, 0]}>
+        <mesh position={[0, 0.5, 0]} geometry={screenGeo}>
           <meshStandardMaterial color={chassisColor} roughness={0.4} metalness={0.8} />
-        </RoundedBox>
-        <mesh position={[0, 0.5, 0.021]}>
-          <planeGeometry args={[1.46, 0.96]} />
+        </mesh>
+        <mesh position={[0, 0.5, 0.021]} geometry={screenSurfaceGeo}>
           <meshPhysicalMaterial color="#000000" roughness={0.2} metalness={0.8} clearcoat={1} />
         </mesh>
         {active ? <TypewriterTerminal /> : (
@@ -760,10 +757,22 @@ export const Brain: React.FC<BrainProps> = ({ onClick, active, label, visible = 
 
   return (
     <group ref={groupRef} position={[-2.5, 0.8, 0.5]} onClick={(e) => { e.stopPropagation(); onClick(); playClickSound(); }} onPointerOver={() => { setHover(true); playHoverSound(); }} onPointerOut={() => setHover(false)}>
-      <Float speed={4} rotationIntensity={0.5} floatIntensity={1}>
+      <Float speed={2} rotationIntensity={0.5} floatIntensity={0.5}>
         <mesh ref={meshRef}>
           <icosahedronGeometry args={[0.7, 0]} />
-          <MeshTransmissionMaterial backside samples={4} thickness={0.5} chromaticAberration={0.5} anisotropy={0.5} distortion={0.5} distortionScale={0.5} temporalDistortion={0.1} iridescence={1} iridescenceIOR={1} iridescenceThicknessRange={[0, 1400]} color={active ? "#f472b6" : "#e2e8f0"} />
+          <MeshTransmissionMaterial 
+            backside={false} 
+            samples={1} // Lowest samples for max performance
+            resolution={512}
+            thickness={0.2} 
+            chromaticAberration={0.1} 
+            anisotropy={0.1} 
+            distortion={0.1} 
+            distortionScale={0.1} 
+            temporalDistortion={0.1} 
+            color={active ? "#f472b6" : "#e2e8f0"} 
+            roughness={0.1}
+          />
         </mesh>
         <mesh ref={innerRef} scale={0.4}>
            <octahedronGeometry args={[1, 0]} />

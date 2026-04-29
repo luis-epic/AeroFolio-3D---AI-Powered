@@ -1,5 +1,6 @@
 
-import React, { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { Section, ChatMessage } from '../types';
 import { generateAIResponse } from '../services/geminiService';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -139,85 +140,84 @@ const ScrambleText: React.FC<{ text: string; className?: string }> = ({ text, cl
 };
 
 // Extracted component to prevent re-renders on parent state change
-const LanguageToggle: React.FC<{ language: Language; toggleLanguage: () => void }> = memo(({ language, toggleLanguage }) => {
-  const languageLabel = useMemo(() => {
+const LanguageToggle: React.FC<{ language: Language; toggleLanguage: () => void }> = ({ language, toggleLanguage }) => {
+  const getLanguageLabel = () => {
     if (language === 'en') return 'ENGLISH';
     if (language === 'es') return 'ESPAÑOL';
     return '中文';
-  }, [language]);
-
-  const handleClick = useCallback(() => {
-    toggleLanguage();
-    playClickSound();
-  }, [toggleLanguage]);
+  };
 
   return (
     <button 
-      onClick={handleClick}
+      onClick={() => { toggleLanguage(); playClickSound(); }}
       onMouseEnter={playHoverSound}
-      aria-label={`Switch language. Current: ${languageLabel}`}
-      className="absolute top-8 right-8 z-50 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white px-3 py-1 rounded-full text-sm font-mono transition-all pointer-events-auto focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900"
+      className="absolute top-8 right-8 z-50 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white px-3 py-1 rounded-full text-sm font-mono transition-all pointer-events-auto"
     >
-      {languageLabel}
+      {getLanguageLabel()}
     </button>
   );
-});
+};
 
 // Recruiter HUD (Hybrid Navigation)
 const RecruiterHUD: React.FC<{ 
   activeSection: Section; 
   onNavigate: (s: Section) => void;
   labels: any; 
-}> = memo(({ activeSection, onNavigate, labels }) => {
+}> = ({ activeSection, onNavigate, labels }) => {
   const navItems: { id: Section; label: string; icon: string }[] = [
-    { id: 'home', label: 'HOME', icon: '🏠' },
+    { id: 'home', label: labels.home, icon: '🏠' },
     { id: 'projects', label: labels.projects, icon: '💻' },
     { id: 'about', label: labels.about, icon: '🧠' },
     { id: 'contact', label: labels.contact, icon: '📱' },
   ];
 
   return (
-    <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-50 flex gap-4 pointer-events-auto">
-      <div className="bg-gray-900/80 backdrop-blur-md border border-gray-700 rounded-full p-2 flex gap-2 shadow-2xl">
+    <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 z-50 flex gap-4 pointer-events-auto">
+      <div className="bg-glass-dark backdrop-blur-2xl border border-glass-border rounded-full p-2 flex gap-1 md:gap-2 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
         {navItems.map((item) => (
           <button
             key={item.id}
             onClick={() => { onNavigate(item.id); playClickSound(); }}
             onMouseEnter={playHoverSound}
-            aria-label={`Navigate to ${item.label}`}
-            aria-current={activeSection === item.id ? 'page' : undefined}
             className={`
-              px-4 py-2 rounded-full text-xs md:text-sm font-bold transition-all flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900
+              relative px-4 py-2.5 rounded-full text-xs md:text-sm font-medium transition-all flex items-center gap-2 overflow-hidden
               ${activeSection === item.id 
-                ? 'bg-blue-600 text-white shadow-lg scale-105' 
-                : 'text-gray-400 hover:text-white hover:bg-white/10'}
+                ? 'text-white' 
+                : 'text-gray-400 hover:text-white'}
             `}
           >
-            <span aria-hidden="true">{item.icon}</span>
-            <span className="hidden md:inline">{item.label}</span>
+            {activeSection === item.id && (
+              <motion.div 
+                layoutId="nav-pill"
+                className="absolute inset-0 bg-white/15 border border-white/20 rounded-full"
+                transition={{ type: "spring", stiffness: 400, damping: 30 }}
+              />
+            )}
+            <span className="relative z-10">{item.icon}</span>
+            <span className="relative z-10 hidden md:inline font-sans">{item.label}</span>
           </button>
         ))}
       </div>
     </div>
   );
-});
+};
 
 // Extracted Header Component to prevent flickering
-const Header: React.FC<{ visible: boolean; t: any }> = memo(({ visible, t }) => (
-  <div className={`absolute top-8 left-8 z-10 pointer-events-none transition-all duration-500 ${visible ? 'opacity-0 translate-y-[-20px]' : 'opacity-100'}`}>
-    <h1 className="text-4xl md:text-6xl font-bold text-white tracking-tight">
+const Header: React.FC<{ visible: boolean; t: any }> = ({ visible, t }) => (
+  <div className={`absolute top-10 left-10 z-10 pointer-events-none transition-all duration-700 ease-out ${visible ? 'opacity-0 translate-y-[-20px] filter blur-md' : 'opacity-100 filter blur-0'}`}>
+    <h1 className="text-4xl md:text-6xl font-bold text-white tracking-tighter font-display uppercase drop-shadow-2xl">
       <ScrambleText text="Luis Martinez" />
-      <span className="block text-blue-500 text-xl md:text-2xl mt-2 font-mono">
+      <span className="block text-cyan-400 text-lg md:text-xl mt-3 font-mono tracking-widest font-normal opacity-90 border-l-2 border-pink-500 pl-3">
          <ScrambleText text={t.home.role} />
       </span>
     </h1>
     {!visible && (
-      <p className="text-gray-400 mt-4 max-w-md text-sm md:text-base animate-pulse">
+      <p className="text-gray-400 mt-6 max-w-md text-sm md:text-base leading-relaxed font-sans opacity-80 mix-blend-screen">
         {t.home.description}
       </p>
     )}
   </div>
-));
+);
 
 const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSection, setAiState }) => {
   const [visible, setVisible] = useState(false);
@@ -227,7 +227,6 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
   const [prompt, setPrompt] = useState("");
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [isTyping, setIsTyping] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
   // GitHub Data State
@@ -238,6 +237,17 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
 
   // STT State (Speech to Text)
   const [isListening, setIsListening] = useState(false);
+
+  // Esc to Close Handler
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && activeSection !== 'home') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeSection, onClose]);
 
   // TAB TITLE HIJACKING (Easter Egg)
   useEffect(() => {
@@ -253,15 +263,12 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
     return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
   }, []);
 
-
-  // Fetch GitHub Data when Contact section is active
+  // Fetch GitHub Data on Mount (Global)
   useEffect(() => {
-    if (activeSection === 'contact' && !githubData) {
-        fetchGitHubProfile('luis-epic').then(data => {
-            if (data) setGithubData(data);
-        });
-    }
-  }, [activeSection, githubData]);
+    fetchGitHubProfile('luis-epic').then(data => {
+        if (data) setGithubData(data);
+    });
+  }, []);
 
   // Reset chat on language change
   useEffect(() => {
@@ -301,15 +308,11 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
     window.speechSynthesis.speak(utterance);
   };
 
-  const processMessage = useCallback(async (text: string) => {
+  const processMessage = async (text: string) => {
     if (!text.trim()) return;
     if (typeof window !== 'undefined' && window.speechSynthesis) {
         window.speechSynthesis.cancel();
     }
-    
-    // Clear previous errors
-    setError(null);
-    
     const userMsg: ChatMessage = { role: 'user', text: text };
     setChatHistory(prev => [...prev, userMsg]);
     setPrompt("");
@@ -318,101 +321,43 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
     setIsTyping(true);
     setAiState('thinking'); // Update global state for 3D reactivity
     
-    try {
-      const responseText = await generateAIResponse(text, language);
-      
-      setChatHistory(prev => [...prev, { role: 'model', text: responseText }]);
-      
-      // Check if response is an error message (contains error keywords)
-      const isErrorResponse = responseText.toLowerCase().includes('error') || 
-                             responseText.toLowerCase().includes('error') ||
-                             responseText.toLowerCase().includes('intenta') ||
-                             responseText.toLowerCase().includes('try again');
-      
-      if (isErrorResponse && !responseText.includes('demo mode')) {
-        setError(responseText);
-      }
-      
-      speakText(responseText);
-    } catch (error) {
-      console.error('Error processing message:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      setError(errorMessage);
-      
-      // Add error message to chat
-      setChatHistory(prev => [...prev, { 
-        role: 'model', 
-        text: language === 'es' 
-          ? "Lo siento, ocurrió un error al procesar tu solicitud. Por favor intenta nuevamente."
-          : language === 'zh'
-          ? "抱歉，处理您的请求时出错。请重试。"
-          : "Sorry, an error occurred while processing your request. Please try again."
-      }]);
-    } finally {
-      // Reset Loading States
-      setIsTyping(false);
-      setAiState('idle');
-    }
-  }, [language, setAiState]);
+    const responseText = await generateAIResponse(text, language);
+    
+    setChatHistory(prev => [...prev, { role: 'model', text: responseText }]);
+    
+    // Reset Loading States
+    setIsTyping(false);
+    setAiState('idle');
+    
+    speakText(responseText);
+  };
 
-  const handleSendMessage = useCallback(async (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     playClickSound();
     processMessage(prompt);
-  }, [prompt, processMessage]);
+  };
 
-  const handleQuickQuestion = useCallback((question: string) => {
+  const handleQuickQuestion = (question: string) => {
     playClickSound();
     processMessage(question);
-  }, [processMessage]);
+  };
 
-  const toggleLanguage = useCallback(() => {
+  const toggleLanguage = () => {
     if (language === 'en') setLanguage('es');
     else if (language === 'es') setLanguage('zh');
     else setLanguage('en');
-  }, [language, setLanguage]);
+  };
 
-  const handleNav = useCallback((section: Section) => {
+  const handleNav = (section: Section) => {
     if (section === 'home') onClose();
     else setActiveSection(section);
-  }, [onClose, setActiveSection]);
-
-  // Keyboard navigation support (moved after handleNav definition)
-  useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      // Escape key to close overlay
-      if (e.key === 'Escape' && activeSection !== 'home') {
-        onClose();
-        return;
-      }
-      
-      // Arrow keys for navigation (when not in input field)
-      const target = e.target as HTMLElement;
-      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') {
-        return; // Don't interfere with text input
-      }
-      
-      if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
-        const sections: Section[] = ['home', 'projects', 'about', 'contact'];
-        const currentIndex = sections.indexOf(activeSection);
-        if (currentIndex === -1) return;
-        
-        const nextIndex = e.key === 'ArrowRight' 
-          ? (currentIndex + 1) % sections.length
-          : (currentIndex - 1 + sections.length) % sections.length;
-        
-        handleNav(sections[nextIndex]);
-      }
-    };
-    
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [activeSection, onClose, handleNav]);
+  };
 
   const handleMicClick = () => {
     playClickSound();
     if (!('webkitSpeechRecognition' in window)) {
-        alert("Speech recognition not supported in this browser. Try Chrome.");
+        console.warn("Speech recognition not supported in this browser. Try Chrome.");
         return;
     }
 
@@ -453,33 +398,37 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
       <RecruiterHUD activeSection={activeSection} onNavigate={handleNav} labels={t.labels} />
 
       <div 
-        className={`absolute inset-0 z-20 flex items-center justify-center transition-all duration-500 ${visible ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'}`}
+        className={`absolute inset-0 z-20 flex items-center justify-center transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${visible ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none filter blur-sm'}`}
       >
-        <div className="relative w-full max-w-4xl h-[70vh] flex flex-col mt-10">
+        <div className="relative w-full max-w-5xl h-[75vh] flex flex-col mt-10 md:mt-0 p-4 md:p-6 md:px-10">
           
-          <div className="flex-1 bg-black/60 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl overflow-hidden flex flex-col md:flex-row relative">
+          <div className="flex-1 bg-glass-dark backdrop-blur-3xl border border-glass-border rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col md:flex-row relative group">
             
             {/* Window Controls Decoration */}
             <div className="absolute top-4 left-4 flex gap-2 z-50">
-                <div className="w-3 h-3 rounded-full bg-red-500/50"></div>
-                <div className="w-3 h-3 rounded-full bg-yellow-500/50"></div>
-                <div className="w-3 h-3 rounded-full bg-green-500/50"></div>
+                <div className="w-3 h-3 rounded-full bg-red-500/50 hover:bg-red-500 transition-colors shadow-[0_0_10px_rgba(239,68,68,0.5)]"></div>
+                <div className="w-3 h-3 rounded-full bg-yellow-500/50 hover:bg-yellow-500 transition-colors shadow-[0_0_10px_rgba(234,179,8,0.5)]"></div>
+                <div className="w-3 h-3 rounded-full bg-green-500/50 hover:bg-green-500 transition-colors shadow-[0_0_10px_rgba(34,197,94,0.5)]"></div>
             </div>
 
             <button 
               onClick={() => { onClose(); playClickSound(); }}
               onMouseEnter={playHoverSound}
-              aria-label="Close overlay"
-              className="absolute top-4 right-4 z-50 bg-white/5 hover:bg-red-500/80 border border-white/10 text-white p-2 rounded-full transition-all focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-gray-900"
+              className="absolute top-4 right-4 z-50 bg-white/5 hover:bg-red-500/80 border border-white/10 text-white p-2 rounded-full transition-all"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
 
             {/* --- PROJECTS VIEW (CYBERPUNK HUD STYLE) --- */}
             {activeSection === 'projects' && (
-              <div className="flex flex-col w-full h-full">
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
+                className="flex flex-col w-full h-full"
+              >
                 {/* Header */}
                 <div className="p-6 pt-12 pr-16 border-b border-white/10 bg-gradient-to-r from-blue-500/10 via-cyan-500/5 to-transparent">
                   <h2 className="text-xl font-bold text-cyan-400 flex items-center gap-3 font-mono tracking-widest">
@@ -489,181 +438,264 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
                   <p className="text-[10px] text-cyan-300/60 uppercase tracking-[0.2em] ml-5">SYSTEM.ROOT.PROJECTS</p>
                 </div>
                 
-                {/* Scrollable Grid */}
-                <div className="p-8 w-full overflow-y-auto scroll-smooth">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {t.projects.items.map((project) => (
-                      <div 
-                        key={project.id} 
-                        className="relative group bg-gradient-to-br from-cyan-900/10 to-blue-900/20 border border-cyan-500/20 p-6 rounded-lg rounded-tr-none hover:border-cyan-400/50 transition-all duration-300 hover:shadow-[0_0_20px_rgba(6,182,212,0.15)] overflow-hidden"
-                      >
-                         {/* Tech Decors */}
-                         <div className="absolute top-0 right-0 p-2 text-[9px] font-mono text-cyan-500/40 opacity-50 bg-black/40 rounded-bl-lg">ID: PRJ-0{project.id}</div>
-                         <div className="absolute bottom-0 right-0 w-8 h-8 border-r-2 border-b-2 border-cyan-500/20 group-hover:border-cyan-400 transition-colors"></div>
-                         
-                         <h3 className="text-lg font-bold text-white mb-2 group-hover:text-cyan-300 font-mono tracking-tight flex items-center gap-2">
-                            <span className="text-cyan-500 text-xs opacity-0 group-hover:opacity-100 transition-opacity">►</span>
-                            {project.title}
-                         </h3>
-                         
-                         <div className="flex flex-wrap gap-2 mb-4">
-                            <span className="text-[10px] text-cyan-200 bg-cyan-500/10 border border-cyan-500/20 px-2 py-0.5 rounded uppercase tracking-wider shadow-[0_0_5px_rgba(6,182,212,0.1)]">
-                                {project.tech}
-                            </span>
-                         </div>
-                         
-                         <p className="text-gray-400 text-xs font-mono leading-relaxed border-l-2 border-white/5 pl-3 group-hover:border-cyan-500/30 transition-colors">
-                            {project.description}
-                         </p>
-                      </div>
-                    ))}
+                {/* Bento Grid layout for projects */}
+                <div className="p-4 md:p-8 w-full overflow-y-auto scroll-smooth custom-scrollbar mask-gradient">
+                  <div className="grid grid-cols-1 md:grid-cols-6 auto-rows-[minmax(220px,auto)] gap-4 md:gap-6 pb-20">
+                    {t.projects.items.map((project: any, i: number) => {
+                      // Make the first project span more columns to create a bento box feel
+                      const colSpan = i === 0 ? "md:col-span-4" : i === 1 ? "md:col-span-2" : i === 2 ? "md:col-span-3" : "md:col-span-3";
+                      
+                      return (
+                        <motion.div 
+                          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                          animate={{ opacity: 1, scale: 1, y: 0 }}
+                          transition={{ type: "spring", stiffness: 300, damping: 24, delay: i * 0.1 }}
+                          key={project.id} 
+                          className={`relative group bg-glass-dark border border-glass-border p-6 md:p-8 rounded-3xl hover:border-pink-500/40 hover:bg-glass-light transition-all duration-500 hover:shadow-[0_8px_32px_rgba(236,72,153,0.15)] overflow-hidden flex flex-col justify-between ${colSpan}`}
+                        >
+                           {/* Hover Glow Effect */}
+                           <div className="absolute -inset-0 bg-gradient-to-br from-pink-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+                           
+                           {/* Content Top */}
+                           <div className="z-10">
+                             <div className="flex justify-between items-start mb-4">
+                               <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-300 group-hover:text-pink-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                                  </svg>
+                               </div>
+                               <span className="text-[10px] font-mono text-gray-500 bg-white/5 px-3 py-1 rounded-full uppercase tracking-widest border border-white/5 group-hover:border-pink-500/20 group-hover:text-pink-300 transition-colors">
+                                 PRJ-0{project.id}
+                               </span>
+                             </div>
+                             
+                             <h3 className="text-xl md:text-2xl font-bold text-white mb-3 tracking-tight font-display group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-white group-hover:to-pink-200 transition-all">
+                                {project.title}
+                             </h3>
+                             
+                             <p className="text-gray-400 text-sm font-sans leading-relaxed mb-6 group-hover:text-gray-300 transition-colors line-clamp-3">
+                                {project.description}
+                             </p>
+                           </div>
+
+                           {/* Content Bottom: Tech Stack */}
+                           <div className="flex flex-wrap gap-2 mt-auto z-10 pt-4 border-t border-white/5 group-hover:border-white/10 transition-colors">
+                              {project.tech.split(',').map((tech: string, idx: number) => (
+                                <span key={idx} className="text-[11px] text-gray-300 bg-white/5 border border-white/10 px-3 py-1 rounded-full font-medium shadow-sm group-hover:bg-pink-500/10 group-hover:border-pink-500/20 group-hover:text-pink-100 transition-all duration-300">
+                                    {tech.trim()}
+                                </span>
+                              ))}
+                           </div>
+                        </motion.div>
+                      );
+                    })}
                   </div>
                 </div>
-              </div>
+              </motion.div>
             )}
 
             {/* --- ABOUT / AI VIEW (HOLOGRAPHIC CHAT) --- */}
             {activeSection === 'about' && (
-              <div className="flex flex-col w-full h-full">
-                {/* Header HUD */}
-                <div className="p-6 pt-12 pr-16 border-b border-white/10 bg-gradient-to-r from-pink-500/10 via-purple-500/5 to-transparent flex justify-between items-center">
-                  <div>
-                    <h2 className="text-xl font-bold text-pink-400 flex items-center gap-3 font-mono tracking-widest">
-                       <span className="w-2 h-2 bg-pink-500 animate-pulse rounded-full shadow-[0_0_8px_#ec4899]"></span>
-                       <ScrambleText text={t.about.title} />
-                    </h2>
-                    <p className="text-[10px] text-pink-300/60 uppercase tracking-[0.2em] ml-5">{t.about.subtitle}</p>
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
+                className="flex flex-col md:flex-row w-full h-full"
+              >
+                
+                {/* Right/Bottom Side: Terminal Chat (Takes remaining space) */}
+                <div className="flex-1 flex flex-col w-full h-full md:border-l border-white/10 relative order-2 md:order-1">
+                  {/* Header HUD */}
+                  <div className="p-4 pt-10 md:p-6 md:pt-12 border-b border-white/10 bg-gradient-to-r from-pink-500/10 via-purple-500/5 to-transparent flex justify-between items-center">
+                    <div>
+                      <h2 className="text-lg md:text-xl font-bold text-pink-400 flex items-center gap-3 font-mono tracking-widest">
+                         <span className="w-2 h-2 bg-pink-500 animate-pulse rounded-full shadow-[0_0_8px_#ec4899]"></span>
+                         <ScrambleText text={t.about.title} />
+                      </h2>
+                      <p className="text-[9px] md:text-[10px] text-pink-300/60 uppercase tracking-[0.2em] ml-5">{t.about.subtitle}</p>
+                    </div>
+                    <button 
+                      onClick={() => {
+                         playClickSound();
+                         setIsMuted(!isMuted);
+                         if (!isMuted && typeof window !== 'undefined' && window.speechSynthesis) {
+                            window.speechSynthesis.cancel();
+                         }
+                      }}
+                      onMouseEnter={playHoverSound}
+                      className={`p-2 rounded-sm border border-white/10 transition-all ${isMuted ? 'bg-transparent text-gray-500' : 'bg-pink-500/20 text-pink-300 border-pink-500/50 shadow-[0_0_10px_rgba(236,72,153,0.3)]'}`}
+                      title={isMuted ? "Unmute Voice" : "Mute Voice"}
+                    >
+                       {isMuted ? '🔇' : '🔊'}
+                    </button>
                   </div>
-                  <button 
-                    onClick={() => {
-                       playClickSound();
-                       setIsMuted(!isMuted);
-                       if (!isMuted && typeof window !== 'undefined' && window.speechSynthesis) {
-                          window.speechSynthesis.cancel();
-                       }
-                    }}
-                    onMouseEnter={playHoverSound}
-                    className={`p-2 rounded-sm border border-white/10 transition-all ${isMuted ? 'bg-transparent text-gray-500' : 'bg-pink-500/20 text-pink-300 border-pink-500/50 shadow-[0_0_10px_rgba(236,72,153,0.3)]'}`}
-                    title={isMuted ? "Unmute Voice" : "Mute Voice"}
-                  >
-                     {isMuted ? '🔇' : '🔊'}
-                  </button>
+                  
+                  {/* Terminal Output (Chat) */}
+                  <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 md:space-y-6 scroll-smooth custom-scrollbar mask-gradient">
+                    <AnimatePresence>
+                    {chatHistory.map((msg, idx) => (
+                      <motion.div 
+                        key={idx}
+                        initial={{ opacity: 0, x: msg.role === 'user' ? 20 : -20, scale: 0.95 }}
+                        animate={{ opacity: 1, x: 0, scale: 1 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                        className={`flex w-full ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                      >
+                        <div className={`relative max-w-[90%] md:max-w-[85%] p-4 md:p-5 text-sm font-mono leading-relaxed shadow-lg backdrop-blur-md transition-all duration-300
+                          ${msg.role === 'user' 
+                            ? 'bg-glass-light border border-blue-500/30 text-blue-100 rounded-2xl rounded-tr-none shadow-[0_0_15px_rgba(37,99,235,0.1)]' 
+                            : 'bg-glass-dark border border-pink-500/30 text-pink-100 rounded-2xl rounded-tl-none shadow-[0_0_15px_rgba(236,72,153,0.1)]'
+                        }`}>
+                           {msg.role === 'model' && (
+                              <span className="absolute -top-2 left-4 text-[9px] bg-pink-500/20 border border-pink-500/30 text-pink-300 px-1.5 py-0.5 rounded uppercase tracking-wider hidden md:block">Sys.Log</span>
+                           )}
+                           {msg.text}
+                        </div>
+                      </motion.div>
+                    ))}
+                    </AnimatePresence>
+                    <AnimatePresence>
+                    {isTyping && (
+                       <motion.div 
+                         initial={{ opacity: 0, y: 10 }}
+                         animate={{ opacity: 1, y: 0 }}
+                         exit={{ opacity: 0, scale: 0.9 }}
+                         className="flex justify-start"
+                       >
+                         <div className="bg-glass-dark border border-pink-500/30 p-3 rounded-2xl rounded-tl-none flex gap-2 items-center">
+                           <div className="w-1.5 h-1.5 bg-pink-500 rounded-full animate-bounce"></div>
+                           <div className="w-1.5 h-1.5 bg-pink-500 rounded-full animate-bounce delay-75"></div>
+                           <div className="w-1.5 h-1.5 bg-pink-500 rounded-full animate-bounce delay-150"></div>
+                         </div>
+                       </motion.div>
+                    )}
+                    </AnimatePresence>
+                  </div>
+
+                  {/* Suggestion Chips */}
+                  {!isTyping && (
+                    <div className="px-4 md:px-6 pb-2 border-b border-glass-border md:border-none flex gap-2 overflow-x-auto no-scrollbar py-2 mask-gradient">
+                      {t.about.quickQuestions.map((q, i) => (
+                        <button
+                          key={i}
+                          onClick={() => handleQuickQuestion(q)}
+                          onMouseEnter={playHoverSound}
+                          className="whitespace-nowrap bg-glass-light hover:bg-pink-500/20 text-gray-300 hover:text-pink-100 border border-glass-border hover:border-pink-500/50 hover:shadow-[0_0_15px_rgba(236,72,153,0.3)] text-[10px] md:text-xs font-medium px-4 py-2 rounded-full transition-all duration-300 flex-shrink-0"
+                        >
+                          {q}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Command Input with Voice Support */}
+                  <div className="p-3 md:p-4 bg-glass-dark border-t border-glass-border backdrop-blur-2xl">
+                    <form onSubmit={handleSendMessage} className="flex gap-2 relative group items-center">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-pink-500 font-mono text-sm md:text-lg animate-pulse">{'>'}</span>
+                      <input 
+                        type="text" 
+                        value={prompt}
+                        onChange={(e) => setPrompt(e.target.value)}
+                        placeholder={isListening ? "Listening..." : t.about.placeholder}
+                        className={`flex-1 w-full bg-glass-light border border-glass-border rounded-xl pl-8 p-3 text-pink-50 focus:outline-none focus:border-pink-500/80 focus:bg-white/10 focus:ring-2 focus:ring-pink-500/30 font-mono text-xs md:text-sm transition-all placeholder:text-gray-500 ${isListening ? 'border-pink-500 ring-2 ring-pink-500/50' : ''}`}
+                      />
+                      
+                      <button
+                          type="button"
+                          onClick={handleMicClick}
+                          onMouseEnter={playHoverSound}
+                          className={`p-2.5 md:p-3 rounded-xl border transition-all flex-shrink-0 ${isListening ? 'bg-red-500/20 border-red-500 text-red-400' : 'bg-glass-light border-glass-border text-gray-400 hover:text-pink-400 hover:bg-pink-500/10 hover:border-pink-500/30'}`}
+                          title="Voice Input"
+                      >
+                          {isListening ? (
+                              <span className="relative flex h-4 w-4 md:h-5 md:w-5">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-4 w-4 md:h-5 md:w-5 bg-red-500"></span>
+                              </span>
+                          ) : (
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 md:h-5 md:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                              </svg>
+                          )}
+                      </button>
+
+                      <button 
+                        type="submit"
+                        onMouseEnter={playHoverSound}
+                        disabled={isTyping || !prompt.trim()}
+                        className="bg-pink-600 hover:bg-pink-500 disabled:bg-gray-800/50 disabled:text-gray-500 text-white px-4 md:px-6 py-2.5 md:py-3 rounded-xl font-sans text-xs font-bold uppercase tracking-widest transition-all focus:ring-2 focus:ring-pink-500 focus:ring-offset-2 focus:ring-offset-black flex-shrink-0 shadow-[0_0_15px_rgba(236,72,153,0.3)] disabled:shadow-none"
+                      >
+                        {t.about.send || 'TX'}
+                      </button>
+                    </form>
+                  </div>
                 </div>
                 
-                {/* Terminal Output (Chat) */}
-                <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-6 space-y-6 scroll-smooth">
-                  {/* Error Message Display */}
-                  {error && (
-                    <div className="bg-red-500/20 border border-red-500/50 text-red-300 p-4 rounded-lg font-mono text-sm flex items-start gap-3 animate-fade-in">
-                      <span className="text-red-500 text-lg">⚠️</span>
-                      <div className="flex-1">
-                        <div className="text-[10px] uppercase tracking-wider text-red-400/70 mb-1">ERROR</div>
-                        <div>{error}</div>
-                        <button
-                          onClick={() => setError(null)}
-                          className="mt-2 text-xs text-red-400 hover:text-red-300 underline"
-                        >
-                          Dismiss
-                        </button>
-                      </div>
-                    </div>
-                  )}
+                {/* Left/Top Side: Profile & Matrix (Fixed Width on Desktop) */}
+                <div className="w-full md:w-1/3 bg-black/40 flex flex-col p-6 overflow-y-auto order-1 md:order-2 border-b md:border-none border-white/5 relative">
                   
-                  {chatHistory.map((msg, idx) => (
-                    <div key={idx} className={`flex w-full ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}>
-                      <div className={`relative max-w-[85%] p-5 text-sm font-mono leading-relaxed shadow-lg backdrop-blur-md transition-all duration-300
-                        ${msg.role === 'user' 
-                          ? 'bg-gradient-to-br from-blue-600/30 to-blue-800/30 border border-blue-500/30 text-blue-100 rounded-2xl rounded-tr-none shadow-[0_0_15px_rgba(37,99,235,0.1)]' 
-                          : 'bg-black/60 border border-pink-500/30 text-pink-100 rounded-2xl rounded-tl-none shadow-[0_0_15px_rgba(236,72,153,0.1)]'
-                      }`}>
-                         {/* AI Decorator */}
-                         {msg.role === 'model' && (
-                            <span className="absolute -top-2 left-4 text-[9px] bg-pink-500/20 border border-pink-500/30 text-pink-300 px-1.5 py-0.5 rounded uppercase tracking-wider">Sys.Log</span>
-                         )}
-                         {msg.text}
+                  {/* Status Indicator */}
+                  <div className="absolute top-4 right-4 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_5px_#22c55e]"></span>
+                    <span className="text-[8px] font-mono text-green-500 tracking-widest">ONLINE</span>
+                  </div>
+
+                  <div className="mt-8 md:mt-2 text-center">
+                    <div className="w-20 h-20 md:w-24 md:h-24 mx-auto border-2 border-pink-500/50 rounded-full overflow-hidden shadow-[0_0_20px_rgba(236,72,153,0.3)] mb-4 bg-gray-800">
+                      <img src={githubData?.avatar_url || 'https://avatars.githubusercontent.com/luis-epic'} alt="Profile" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.src = 'https://api.dicebear.com/7.x/identicon/svg?seed=luis-epic&backgroundColor=1f2937'; }} />
+                    </div>
+                    <h3 className="text-white font-mono text-lg font-bold"><ScrambleText text={githubData?.name || "Luis Martinez"} /></h3>
+                    <p className="text-pink-400 text-xs font-mono mb-2">{githubData?.bio || "Sr. SWE / UI Architect"}</p>
+                    
+                    {/* Location Pill */}
+                    {githubData?.location && (
+                      <div className="inline-flex items-center gap-1.5 bg-white/5 border border-white/10 px-2 py-0.5 rounded-full text-[9px] text-gray-400 font-mono mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-2.5 w-2.5 text-pink-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        {githubData.location}
+                      </div>
+                    )}
+                    
+                    <div className="flex flex-col gap-2 mt-6">
+                      <h4 className="text-left text-xs uppercase tracking-widest text-gray-400 font-mono mb-2 border-b border-white/10 pb-1">Core Directives</h4>
+                      
+                      <div className="flex justify-between items-center bg-white/5 px-3 py-2 rounded border border-white/5">
+                        <span className="text-xs text-gray-300 font-mono">React / Next.js</span>
+                        <div className="flex gap-1"><div className="w-2 h-2 bg-pink-500 rounded-[1px]"/><div className="w-2 h-2 bg-pink-500 rounded-[1px]"/><div className="w-2 h-2 bg-pink-500 rounded-[1px]"/><div className="w-2 h-2 bg-pink-500 rounded-[1px]"/><div className="w-2 h-2 bg-pink-500/30 rounded-[1px]"/></div>
+                      </div>
+                      <div className="flex justify-between items-center bg-white/5 px-3 py-2 rounded border border-white/5">
+                        <span className="text-xs text-gray-300 font-mono">Three.js / GLSL</span>
+                        <div className="flex gap-1"><div className="w-2 h-2 bg-pink-500 rounded-[1px]"/><div className="w-2 h-2 bg-pink-500 rounded-[1px]"/><div className="w-2 h-2 bg-pink-500 rounded-[1px]"/><div className="w-2 h-2 bg-pink-500/30 rounded-[1px]"/><div className="w-2 h-2 bg-pink-500/30 rounded-[1px]"/></div>
+                      </div>
+                      <div className="flex justify-between items-center bg-white/5 px-3 py-2 rounded border border-white/5">
+                        <span className="text-xs text-gray-300 font-mono">Generative AI</span>
+                        <div className="flex gap-1"><div className="w-2 h-2 bg-pink-500 rounded-[1px]"/><div className="w-2 h-2 bg-pink-500 rounded-[1px]"/><div className="w-2 h-2 bg-pink-500 rounded-[1px]"/><div className="w-2 h-2 bg-pink-500/30 rounded-[1px]"/><div className="w-2 h-2 bg-pink-500/30 rounded-[1px]"/></div>
                       </div>
                     </div>
-                  ))}
-                  {isTyping && (
-                     <div className="flex justify-start animate-pulse">
-                       <div className="bg-black/40 border border-pink-500/30 p-3 rounded-2xl rounded-tl-none flex gap-2 items-center">
-                         <div className="w-1.5 h-1.5 bg-pink-500 rounded-full animate-bounce"></div>
-                         <div className="w-1.5 h-1.5 bg-pink-500 rounded-full animate-bounce delay-75"></div>
-                         <div className="w-1.5 h-1.5 bg-pink-500 rounded-full animate-bounce delay-150"></div>
-                         <span className="text-pink-500/70 text-[10px] font-mono ml-2 tracking-widest">NEURAL UPLINK...</span>
+
+                    <div className="mt-8 text-left">
+                       <h4 className="text-xs uppercase tracking-widest text-gray-400 font-mono mb-2 border-b border-white/10 pb-1">System Load</h4>
+                       <div className="w-full bg-white/5 rounded-full h-1.5 mb-1 mt-3">
+                          <div className="bg-pink-500 h-1.5 rounded-full" style={{ width: '85%' }}></div>
                        </div>
-                     </div>
-                  )}
-                </div>
-
-                {/* Suggestion Chips */}
-                {!isTyping && (
-                  <div className="px-6 pb-4 flex gap-2 overflow-x-auto no-scrollbar mask-gradient">
-                    {t.about.quickQuestions.map((q, i) => (
-                      <button
-                        key={i}
-                        onClick={() => handleQuickQuestion(q)}
-                        onMouseEnter={playHoverSound}
-                        className="whitespace-nowrap bg-white/5 hover:bg-pink-500/20 text-gray-400 hover:text-white border border-white/10 hover:border-pink-500/50 hover:shadow-[0_0_10px_rgba(236,72,153,0.2)] text-[10px] uppercase tracking-wider px-4 py-2 rounded-full transition-all duration-300 font-mono"
-                      >
-                        {q}
-                      </button>
-                    ))}
+                       <p className="text-[10px] text-gray-500 font-mono text-right">CPU: 85% - OPTIMAL</p>
+                    </div>
                   </div>
-                )}
-
-                {/* Command Input with Voice Support */}
-                <div className="p-4 bg-black/40 border-t border-white/10 backdrop-blur-md">
-                  <form onSubmit={handleSendMessage} className="flex gap-2 relative group items-center">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-pink-500 font-mono text-lg animate-pulse">{'>'}</span>
-                    <input 
-                      type="text" 
-                      value={prompt}
-                      onChange={(e) => setPrompt(e.target.value)}
-                      placeholder={isListening ? "Listening..." : t.about.placeholder}
-                      aria-label="Chat input"
-                      aria-describedby="chat-input-description"
-                      className={`flex-1 bg-white/5 border border-white/10 rounded-lg px-10 py-3 text-pink-50 focus:outline-none focus:border-pink-500/50 focus:bg-white/10 focus:shadow-[0_0_15px_rgba(236,72,153,0.1)] font-mono text-sm transition-all placeholder:text-gray-600 ${isListening ? 'border-pink-500 animate-pulse' : ''}`}
-                    />
-                    <span id="chat-input-description" className="sr-only">Type your message or use voice input</span>
-                    
-                    {/* Voice Input Button */}
-                    <button
-                        type="button"
-                        onClick={handleMicClick}
-                        onMouseEnter={playHoverSound}
-                        aria-label={isListening ? "Stop listening" : "Start voice input"}
-                        aria-pressed={isListening}
-                        className={`p-3 rounded-lg border transition-all focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2 focus:ring-offset-gray-900 ${isListening ? 'bg-red-500/20 border-red-500 text-red-400 animate-pulse' : 'bg-white/5 border-white/10 text-gray-400 hover:text-white hover:bg-white/10'}`}
-                        title="Voice Input"
-                    >
-                        {isListening ? (
-                            <div className="w-4 h-4 bg-red-500 rounded-full"></div>
-                        ) : (
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                            </svg>
-                        )}
-                    </button>
-
-                    <button 
-                      type="submit"
-                      onMouseEnter={playHoverSound}
-                      disabled={isTyping || !prompt.trim()}
-                      aria-label="Send message"
-                      aria-busy={isTyping}
-                      className="bg-pink-600/80 hover:bg-pink-500 disabled:bg-gray-800 disabled:text-gray-600 text-white px-6 py-3 rounded-lg font-mono text-xs uppercase tracking-widest transition-all shadow-lg hover:shadow-pink-500/20 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2 focus:ring-offset-gray-900"
-                    >
-                      {t.about.send}
-                    </button>
-                  </form>
                 </div>
-              </div>
+
+              </motion.div>
             )}
 
             {/* --- CONTACT VIEW (DATA LINK STYLE) --- */}
             {activeSection === 'contact' && (
-              <div className="flex flex-col w-full h-full">
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
+                className="flex flex-col w-full h-full"
+              >
                 {/* Header HUD */}
                 <div className="p-6 pt-12 pr-16 border-b border-white/10 bg-gradient-to-r from-emerald-500/10 via-green-500/5 to-transparent">
                   <h2 className="text-xl font-bold text-emerald-400 flex items-center gap-3 font-mono tracking-widest">
@@ -700,9 +732,19 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
                        {t.contact.description}
                     </p>
                     
-                    <div className="space-y-4 w-full max-w-sm z-10">
+                    <motion.div 
+                      initial="hidden"
+                      animate="visible"
+                      variants={{
+                        hidden: { opacity: 0 },
+                        visible: { opacity: 1, transition: { staggerChildren: 0.1, delayChildren: 0.2 } }
+                      }}
+                      className="space-y-4 w-full max-w-sm z-10"
+                    >
                       
-                      <a href="mailto:luismartinez.developer@gmail.com" onMouseEnter={playHoverSound} className="group relative w-full flex items-center justify-between p-4 bg-emerald-900/10 border border-emerald-500/30 hover:bg-emerald-500/10 hover:border-emerald-400 hover:shadow-[0_0_20px_rgba(16,185,129,0.2)] transition-all overflow-hidden rounded-sm">
+                      <motion.a 
+                        variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}
+                        href="mailto:luismartinez.developer@gmail.com" onMouseEnter={playHoverSound} className="group relative w-full flex items-center justify-between p-4 bg-emerald-900/10 border border-emerald-500/30 hover:bg-emerald-500/10 hover:border-emerald-400 hover:shadow-[0_0_20px_rgba(16,185,129,0.2)] transition-all overflow-hidden rounded-sm">
                         <div className="flex items-center gap-4">
                            <span className="text-emerald-500 font-mono text-lg group-hover:animate-pulse">@</span>
                            <span className="text-emerald-100 font-mono text-xs uppercase tracking-wider">Send Email</span>
@@ -710,29 +752,33 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
                         <span className="text-xs text-emerald-600 font-mono opacity-50 group-hover:opacity-100 transition-opacity">SMTP://CONNECT</span>
                         {/* Scanline Effect */}
                         <div className="absolute top-0 bottom-0 w-1 bg-emerald-400 left-0 group-hover:h-full h-0 transition-all duration-300"></div>
-                      </a>
+                      </motion.a>
 
-                      <a href="https://www.linkedin.com/in/luisepico/" target="_blank" rel="noopener noreferrer" onMouseEnter={playHoverSound} className="group relative w-full flex items-center justify-between p-4 bg-blue-900/10 border border-blue-500/30 hover:bg-blue-500/10 hover:border-blue-400 hover:shadow-[0_0_20px_rgba(59,130,246,0.2)] transition-all overflow-hidden rounded-sm">
+                      <motion.a 
+                        variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}
+                        href="https://www.linkedin.com/in/luisepico/" target="_blank" rel="noopener noreferrer" onMouseEnter={playHoverSound} className="group relative w-full flex items-center justify-between p-4 bg-blue-900/10 border border-blue-500/30 hover:bg-blue-500/10 hover:border-blue-400 hover:shadow-[0_0_20px_rgba(59,130,246,0.2)] transition-all overflow-hidden rounded-sm">
                         <div className="flex items-center gap-4">
                            <span className="text-blue-500 font-mono text-lg group-hover:animate-pulse">in</span>
                            <span className="text-blue-100 font-mono text-xs uppercase tracking-wider">LinkedIn</span>
                         </div>
                         <span className="text-xs text-blue-600 font-mono opacity-50 group-hover:opacity-100 transition-opacity">LINK://PROFILE</span>
                          <div className="absolute top-0 bottom-0 w-1 bg-blue-400 left-0 group-hover:h-full h-0 transition-all duration-300"></div>
-                      </a>
+                      </motion.a>
 
-                      <a href="https://github.com/luis-epic" target="_blank" rel="noopener noreferrer" onMouseEnter={playHoverSound} className="group relative w-full flex items-center justify-between p-4 bg-violet-900/10 border border-violet-500/30 hover:bg-violet-500/10 hover:border-violet-400 hover:shadow-[0_0_20px_rgba(167,139,250,0.2)] transition-all overflow-hidden rounded-sm">
+                      <motion.a 
+                        variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}
+                        href="https://github.com/luis-epic" target="_blank" rel="noopener noreferrer" onMouseEnter={playHoverSound} className="group relative w-full flex items-center justify-between p-4 bg-violet-900/10 border border-violet-500/30 hover:bg-violet-500/10 hover:border-violet-400 hover:shadow-[0_0_20px_rgba(167,139,250,0.2)] transition-all overflow-hidden rounded-sm">
                         <div className="flex items-center gap-4">
                            <span className="text-violet-500 font-mono text-lg group-hover:text-white group-hover:animate-pulse">git</span>
                            <span className="text-violet-200 font-mono text-xs uppercase tracking-wider">GitHub</span>
                         </div>
                         <span className="text-xs text-violet-600 font-mono opacity-50 group-hover:opacity-100 transition-opacity">REPO://ACCESS</span>
                         <div className="absolute top-0 bottom-0 w-1 bg-violet-400 left-0 group-hover:h-full h-0 transition-all duration-300"></div>
-                      </a>
+                      </motion.a>
 
-                    </div>
+                    </motion.div>
                 </div>
-              </div>
+              </motion.div>
             )}
 
           </div>
