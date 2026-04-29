@@ -344,14 +344,18 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
   };
 
   const toggleLanguage = () => {
-    if (language === 'en') setLanguage('es');
-    else if (language === 'es') setLanguage('zh');
-    else setLanguage('en');
+    React.startTransition(() => {
+      if (language === 'en') setLanguage('es');
+      else if (language === 'es') setLanguage('zh');
+      else setLanguage('en');
+    });
   };
 
   const handleNav = (section: Section) => {
-    if (section === 'home') onClose();
-    else setActiveSection(section);
+    React.startTransition(() => {
+      if (section === 'home') onClose();
+      else setActiveSection(section);
+    });
   };
 
   const handleMicClick = () => {

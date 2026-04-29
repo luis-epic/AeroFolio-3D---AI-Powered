@@ -16,7 +16,9 @@ const AppContent: React.FC = () => {
   const { t } = useLanguage();
 
   const handleCloseOverlay = () => {
-    setActiveSection('home');
+    React.startTransition(() => {
+      setActiveSection('home');
+    });
   };
 
   return (
