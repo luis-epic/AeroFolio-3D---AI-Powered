@@ -9,10 +9,10 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, (process as any).cwd(), '');
   
   // Conditionally set base path for GitHub Pages vs Vercel/Local
-  // Vercel uses root '/', whereas GitHub Pages requires the repo name.
-  // Using process.env.VERCEL to check if it's running on Vercel.
+  // Set base path depending on the deployment environment
+  // Vercel uses root '/', GitHub Actions (and gh-pages) usually uses repo name
   const isVercel = process.env.VERCEL === '1';
-  const basePath = './';
+  const basePath = isVercel ? '/' : '/AeroFolio-3D---AI-Powered/';
   
   return {
     base: basePath,
@@ -37,7 +37,7 @@ export default defineConfig(({ mode }) => {
       )
     },
     build: {
-      outDir: 'dist',
+      outDir: 'docs',
       assetsDir: 'assets',
       sourcemap: false,
       chunkSizeWarningLimit: 2500

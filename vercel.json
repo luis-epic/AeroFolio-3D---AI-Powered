@@ -1,5 +1,6 @@
 {
   "framework": "vite",
+  "outputDirectory": "docs",
   "rewrites": [
     {
       "source": "/(.*)",
