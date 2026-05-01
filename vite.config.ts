@@ -12,7 +12,7 @@ export default defineConfig(({ mode }) => {
   // Vercel uses root '/', whereas GitHub Pages requires the repo name.
   // Using process.env.VERCEL to check if it's running on Vercel.
   const isVercel = process.env.VERCEL === '1';
-  const basePath = isVercel ? '/' : '/AeroFolio-3D---AI-Powered/';
+  const basePath = './';
   
   return {
     base: basePath,
