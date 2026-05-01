@@ -1,7 +1,5 @@
 # AeroFolio 3D | Interactive AI Portfolio
 
-
-
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fyour-repo%2Faerofolio-3d&env=VITE_GEMINI_API_KEY)
 
 AeroFolio 3D is a highly interactive, futuristic 3D portfolio built with React, Three.js (React Three Fiber), and Gemini AI. It provides an immersive cyber-aesthetic experience where users can navigate through a 3D environment or use a terminal-like holographic interface powered by AI to explore your projects, experience, and contact details.
