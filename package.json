@@ -22,6 +22,9 @@
     "three": "^0.169.0",
     "three-mesh-bvh": "^0.8.0"
   },
+  "overrides": {
+    "three": "^0.169.0"
+  },
   "devDependencies": {
     "@tailwindcss/vite": "^4.2.4",
     "@types/node": "^20.12.7",
