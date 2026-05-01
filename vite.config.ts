@@ -9,7 +9,7 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, (process as any).cwd(), '');
   
   return {
-    base: './',
+    base: mode === 'production' ? '/AeroFolio-3D---AI-Powered/' : '/'
     plugins: [react(), tailwindcss()],
     // Define global constant replacements
     define: {
