@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AeroFolio 3D | AI Portfolio</title>
+    <!-- Preconnect and dns-prefetch for performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+      body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #030305; font-family: 'Inter', sans-serif;}
+      #root { width: 100%; height: 100%; }
+      /* Custom scrollbar for overlay content */
+      ::-webkit-scrollbar { width: 4px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background: rgba(236,72,153,0.3); border-radius: 4px; }
+      ::-webkit-scrollbar-thumb:hover { background: rgba(236,72,153,0.6); }
+      
+      .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+      .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 4px; }
+      .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(6,182,212,0.3); border-radius: 4px; }
+      .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(6,182,212,0.6); }
+
+      /* Mask gradient for smooth scroll fade */
+      .mask-gradient {
+        mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+        -webkit-mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+      }
+
+      /* Vignette & Scanline Global Polish */
+      .vignette {
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        pointer-events: none;
+        z-index: 40;
+        background: radial-gradient(circle at center, transparent 40%, rgba(0, 0, 0, 0.45) 150%);
+      }
+      .scanlines {
+        position: fixed;
+        top: 0; left: 0; w: 100%; height: 100%; width: 100vw; height: 100vh;
+        pointer-events: none;
+        z-index: 45;
+        opacity: 0.15;
+        background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.2));
+        background-size: 100% 4px;
+      }
+    </style>
+    <!-- Restore path redirected via 404.html for SPA routing on GitHub Pages -->
+    <script>
+      (function() {
+        var redirect = sessionStorage.getItem('redirect');
+        sessionStorage.removeItem('redirect');
+        if (redirect && redirect !== location.href) {
+          history.replaceState(null, null, redirect);
+        }
+      })();
+    </script>
+    <!-- Shim process to prevent process is not defined errors in prod with Node SDKs -->
+    <script>
+      window.process = {
+        env: {
+          NODE_ENV: 'production'
+        }
+      };
+    </script>
+  <script type="module" crossorigin src="/AeroFolio-3D---AI-Powered/assets/index-irGRH1cH.js"></script>
+  <link rel="stylesheet" crossorigin href="/AeroFolio-3D---AI-Powered/assets/index-DRSOUAwA.css">
+</head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
