@@ -4,7 +4,6 @@ import { useFrame, ThreeElements } from '@react-three/fiber';
 import { Mesh, Group, Vector3, Color, ShaderMaterial, DoubleSide, AdditiveBlending, BackSide, FrontSide, SkinnedMesh, CylinderGeometry, TorusGeometry, BoxGeometry, PlaneGeometry, SphereGeometry, CircleGeometry, IcosahedronGeometry, OctahedronGeometry } from 'three';
 import { Text, Float, MeshTransmissionMaterial, RoundedBox, Billboard, Sparkles, useGLTF, useAnimations } from '@react-three/drei';
 import { useLanguage } from '../contexts/LanguageContext';
-import { RigidBody, RapierRigidBody, CylinderCollider } from '@react-three/rapier';
 import { playHoverSound, playClickSound, playTypeSound } from '../utils/soundEngine';
 
 // Explicitly define JSX intrinsic elements for R3F and HTML to fix Typescript errors

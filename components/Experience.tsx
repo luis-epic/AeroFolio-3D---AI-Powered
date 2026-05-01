@@ -4,7 +4,6 @@ import { useThree, ThreeElements } from '@react-three/fiber';
 import { Vector2 } from 'three';
 import { CameraControls, Environment, MeshReflectorMaterial, ContactShadows, CameraShake, BakeShadows, Preload, AdaptiveEvents } from '@react-three/drei';
 import { EffectComposer, Bloom, Vignette, Glitch } from '@react-three/postprocessing';
-import { Physics, RigidBody, CuboidCollider } from '@react-three/rapier';
 import { Laptop, Brain, Smartphone, TechOrbit, ResumePaper, CoffeeMug, HoloProjector } from './SceneElements';
 import { CAMERA_POSITIONS } from '../constants';
 import { Section } from '../types';
@@ -184,83 +183,70 @@ const Experience: React.FC<ExperienceProps> = ({ activeSection, setActiveSection
         decayRate={0.65}
       />
 
-      <Physics gravity={[0, -9.8, 0]} timeStep="vary">
-          {/* Floating Desk Platform */}
-          <group position={[0, -0.5, 0]}>
-            
-            {/* Contact Shadows: Lowered resolution to 512 for better performance */}
-            <ContactShadows 
-                resolution={512} 
-                scale={20} 
-                blur={2.5} 
-                opacity={0.5} 
-                far={10} 
-                color="#000000" 
-            />
+      {/* Floating Desk Platform */}
+      <group position={[0, -0.5, 0]}>
+        
+        {/* Contact Shadows: Lowered resolution to 512 for better performance */}
+        <ContactShadows 
+            resolution={512} 
+            scale={20} 
+            blur={2.5} 
+            opacity={0.5} 
+            far={10} 
+            color="#000000" 
+        />
 
-             {/* Reflective Floor - Lowered resolution to 256 for performance */}
-            <RigidBody type="fixed" colliders="cuboid" restitution={0.5} friction={0.5}>
-                <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]}>
-                  <planeGeometry args={[50, 50]} />
-                  <MeshReflectorMaterial
-                    blur={[300, 100]}
-                    resolution={256}
-                    mixBlur={1}
-                    mixStrength={50} // Increased reflection strength
-                    roughness={1}
-                    depthScale={1.2}
-                    minDepthThreshold={0.4}
-                    maxDepthThreshold={1.4}
-                    color="#050505"
-                    metalness={0.6}
-                    mirror={0.7}
-                  />
-                </mesh>
-            </RigidBody>
-          </group>
-          
-          {/* DESK SURFACE COLLIDER 
-              Explicitly wrapped in RigidBody type="fixed" to ensure physics stability.
-              Prevents the Mug from glitching through the "table".
-          */}
-          <RigidBody type="fixed" position={[0, -0.1, 0]}>
-             <CuboidCollider args={[3, 0.1, 1.5]} />
-          </RigidBody>
-          
-          {/* Background Hologram Projector - Now Reactive to AI State */}
-          <HoloProjector aiState={aiState} />
-
-          {/* Interactive Elements */}
-          <TechOrbit 
-            active={activeSection === 'projects'} 
-            hovered={isLaptopHovered} 
+          {/* Reflective Floor - Lowered resolution to 256 for performance */}
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]}>
+          <planeGeometry args={[50, 50]} />
+          <MeshReflectorMaterial
+            blur={[300, 100]}
+            resolution={256}
+            mixBlur={1}
+            mixStrength={50} // Increased reflection strength
+            roughness={1}
+            depthScale={1.2}
+            minDepthThreshold={0.4}
+            maxDepthThreshold={1.4}
+            color="#050505"
+            metalness={0.6}
+            mirror={0.7}
           />
+        </mesh>
+      </group>
+      
+      {/* Background Hologram Projector - Now Reactive to AI State */}
+      <HoloProjector aiState={aiState} />
 
-          <Laptop 
-            active={activeSection === 'projects'} 
-            onClick={() => setActiveSection('projects')}
-            label={labels.projects}
-            onHoverChange={setIsLaptopHovered}
-          />
+      {/* Interactive Elements */}
+      <TechOrbit 
+        active={activeSection === 'projects'} 
+        hovered={isLaptopHovered} 
+      />
 
-          <Brain 
-            active={activeSection === 'about'} 
-            onClick={() => setActiveSection('about')} 
-            label={labels.about}
-            visible={activeSection === 'home' || activeSection === 'about'} 
-          />
+      <Laptop 
+        active={activeSection === 'projects'} 
+        onClick={() => setActiveSection('projects')}
+        label={labels.projects}
+        onHoverChange={setIsLaptopHovered}
+      />
 
-          <Smartphone 
-            active={activeSection === 'contact'} 
-            onClick={() => setActiveSection('contact')} 
-            label={labels.contact}
-            visible={activeSection === 'home' || activeSection === 'contact'} 
-          />
+      <Brain 
+        active={activeSection === 'about'} 
+        onClick={() => setActiveSection('about')} 
+        label={labels.about}
+        visible={activeSection === 'home' || activeSection === 'about'} 
+      />
 
-          <ResumePaper />
-          <CoffeeMug />
-      </Physics>
+      <Smartphone 
+        active={activeSection === 'contact'} 
+        onClick={() => setActiveSection('contact')} 
+        label={labels.contact}
+        visible={activeSection === 'home' || activeSection === 'contact'} 
+      />
 
+      <ResumePaper />
+      <CoffeeMug />
     </>
   );
 };
