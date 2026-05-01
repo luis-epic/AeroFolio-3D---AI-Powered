@@ -9,7 +9,7 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, (process as any).cwd(), '');
   
   return {
-    base: '/AeroFolio-3D---AI-Powered/',
+    base: './',
     plugins: [react(), tailwindcss()],
     // Define global constant replacements
     define: {
@@ -34,7 +34,7 @@ export default defineConfig(({ mode }) => {
       outDir: 'dist',
       assetsDir: 'assets',
       sourcemap: false,
-      chunkSizeWarningLimit: 1600
+      chunkSizeWarningLimit: 2500
     }
   }
 })
