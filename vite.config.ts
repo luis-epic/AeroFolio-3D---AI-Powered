@@ -8,11 +8,8 @@ export default defineConfig(({ mode }) => {
   // Set the third parameter to '' to load all env regardless of the `VITE_` prefix.
   const env = loadEnv(mode, (process as any).cwd(), '');
   
-  // Conditionally set base path for GitHub Pages vs Vercel/Local
-  // Set base path depending on the deployment environment
-  // Vercel uses root '/', GitHub Actions (and gh-pages) usually uses repo name
-  const isVercel = process.env.VERCEL === '1';
-  const basePath = isVercel ? '/' : '/AeroFolio-3D---AI-Powered/';
+  // Base path relative so it works on GitHub Pages regardless of repo name
+  const basePath = './';
   
   return {
     base: basePath,
@@ -37,7 +34,7 @@ export default defineConfig(({ mode }) => {
       )
     },
     build: {
-      outDir: 'docs',
+      outDir: 'dist',
       assetsDir: 'assets',
       sourcemap: false,
       chunkSizeWarningLimit: 2500
