@@ -8,8 +8,8 @@ export default defineConfig(({ mode }) => {
   // Set the third parameter to '' to load all env regardless of the `VITE_` prefix.
   const env = loadEnv(mode, (process as any).cwd(), '');
   
-  // Base path relative so it works on GitHub Pages regardless of repo name
-  const basePath = './';
+  // Base path for GitHub Pages project repo (serves at /AeroFolio-3D---AI-Powered/)
+  const basePath = '/AeroFolio-3D---AI-Powered/';
   
   return {
     base: basePath,
