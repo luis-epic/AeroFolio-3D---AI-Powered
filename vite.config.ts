@@ -8,8 +8,8 @@ export default defineConfig(({ mode }) => {
   // Set the third parameter to '' to load all env regardless of the `VITE_` prefix.
   const env = loadEnv(mode, (process as any).cwd(), '');
   
-  // Base path for GitHub Pages project repo (serves at /AeroFolio-3D---AI-Powered/)
-  const basePath = '/AeroFolio-3D---AI-Powered/';
+  // Use root base on Vercel (VERCEL env is auto-set), GitHub Pages needs the repo sub-path
+  const basePath = process.env.VERCEL ? '/' : '/AeroFolio-3D---AI-Powered/';
   
   return {
     base: basePath,
