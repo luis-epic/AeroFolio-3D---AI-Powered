@@ -2,6 +2,7 @@
 import React, { useState, Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { PerformanceMonitor, AdaptiveDpr } from '@react-three/drei';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import { Section } from './types';
 import Overlay from './components/Overlay';
 import Loader from './components/Loader';
@@ -66,6 +67,7 @@ const App: React.FC = () => {
   return (
     <LanguageProvider>
       <AppContent />
+      <SpeedInsights />
     </LanguageProvider>
   );
 };
