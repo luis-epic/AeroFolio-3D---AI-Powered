@@ -8,7 +8,9 @@ import { Language } from '../translations';
 import { playHoverSound, playClickSound } from '../utils/soundEngine';
 import { fetchGitHubProfile, type GitHubProfile, type GitHubFailureReason } from '../services/githubService';
 import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
-import { House, Laptop, BrainCircuit, Smartphone, Mic, Volume2, VolumeX, type LucideIcon } from 'lucide-react';
+import { Mic, Volume2, VolumeX } from 'lucide-react';
+import Navigation from './overlay/Navigation';
+import StatsWidget from './overlay/StatsWidget';
 
 interface OverlayProps {
   activeSection: Section;
@@ -202,59 +204,18 @@ const LanguageToggle: React.FC<{ language: Language; toggleLanguage: () => void 
   );
 };
 
-// Recruiter HUD (Hybrid Navigation)
+// Recruiter HUD delegates to extracted Navigation component
 const RecruiterHUD: React.FC<{ 
   activeSection: Section; 
   onNavigate: (s: Section) => void;
   labels: Record<Section, string>;
-}> = ({ activeSection, onNavigate, labels }) => {
-  // Real icon components rather than emoji: emoji render inconsistently across
-  // platforms and are announced as their unicode name by screen readers.
-  const navItems: { id: Section; label: string; Icon: LucideIcon }[] = [
-    { id: 'home', label: labels.home, Icon: House },
-    { id: 'projects', label: labels.projects, Icon: Laptop },
-    { id: 'about', label: labels.about, Icon: BrainCircuit },
-    { id: 'contact', label: labels.contact, Icon: Smartphone },
-  ];
-
-  return (
-    <nav
-      aria-label="Main"
-      className="absolute bottom-10 left-1/2 transform -translate-x-1/2 z-50 flex gap-4 pointer-events-auto"
-    >
-      <div className="bg-glass-dark backdrop-blur-2xl border border-glass-border rounded-full p-2 flex gap-1 md:gap-2 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
-        {navItems.map((item) => (
-          <button
-            key={item.id}
-            onClick={() => { onNavigate(item.id); playClickSound(); }}
-            onMouseEnter={playHoverSound}
-            // The text label is hidden below `md`, so the button would otherwise
-            // have no accessible name at all on phones.
-            aria-label={item.label}
-            aria-current={activeSection === item.id ? 'page' : undefined}
-            className={`
-              relative px-4 py-2.5 rounded-full text-xs md:text-sm font-medium transition-all flex items-center gap-2 overflow-hidden
-              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70
-              ${activeSection === item.id 
-                ? 'text-white' 
-                : 'text-gray-400 hover:text-white'}
-            `}
-          >
-            {activeSection === item.id && (
-              <motion.div 
-                layoutId="nav-pill"
-                className="absolute inset-0 bg-white/15 border border-white/20 rounded-full"
-                transition={{ type: "spring", stiffness: 400, damping: 30 }}
-              />
-            )}
-            <item.Icon aria-hidden="true" className="relative z-10 w-4 h-4 shrink-0" />
-            <span className="relative z-10 hidden md:inline font-sans">{item.label}</span>
-          </button>
-        ))}
-      </div>
-    </nav>
-  );
-};
+}> = ({ activeSection, onNavigate, labels }) => (
+  <Navigation
+    activeSection={activeSection}
+    onNavigate={onNavigate}
+    labels={labels}
+  />
+);
 
 // Extracted Header Component to prevent flickering
 const Header: React.FC<{ visible: boolean; t: any }> = ({ visible, t }) => (
@@ -828,26 +789,12 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
                                <div className="text-[8px] md:text-[9px] text-emerald-400 uppercase tracking-widest">{t.stats.followers}</div>
                            </div>
                         </div>
-                      ) : githubError ? (
-                      // Show an honest, actionable message instead of spinning
-                      // forever or displaying invented stats.
-                      <div className="mb-6 w-full max-w-sm rounded border border-emerald-500/20 bg-emerald-900/10 px-3 py-2.5 text-center">
-                        <p className="text-[9px] leading-relaxed text-emerald-300/80 font-mono">
-                          {githubError === 'rate-limited'
-                            ? t.stats.rateLimited
-                            : t.stats.unavailable}
-                        </p>
-                        <a
-                          href="https://github.com/luis-epic"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="mt-1 inline-block text-[9px] font-mono text-emerald-400 underline decoration-dotted hover:text-emerald-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
-                        >
-                          {t.stats.viewOnGitHub}
-                        </a>
-                      </div>
                       ) : (
-                      <div className="mb-6 h-12 w-full max-w-sm bg-emerald-900/10 animate-pulse rounded border border-emerald-500/10 flex items-center justify-center text-[9px] text-emerald-500">{t.stats.fetching}</div>
+                      <StatsWidget
+                        data={githubData}
+                        error={githubError}
+                        labels={t.stats}
+                      />
                       )}
 
                     <p className="text-emerald-100 mb-6 max-w-md font-mono text-sm text-center bg-black/40 p-4 border-l-2 border-emerald-500">
