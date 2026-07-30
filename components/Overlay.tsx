@@ -11,6 +11,7 @@ import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
 import { Mic, Volume2, VolumeX } from 'lucide-react';
 import Navigation from './overlay/Navigation';
 import StatsWidget from './overlay/StatsWidget';
+import { Projects } from './Projects';
 
 interface OverlayProps {
   activeSection: Section;
@@ -497,7 +498,14 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
                   <p className="text-[10px] text-cyan-300/60 uppercase tracking-[0.2em] ml-5">SYSTEM.ROOT.PROJECTS</p>
                 </div>
                 
-                {/* Projects content rendered in overlay */}
+                {/* Projects carousel */}
+                <div className="flex-1 overflow-hidden flex flex-col">
+                  <Projects 
+                    items={t.projects.items}
+                    playClickSound={playClickSound}
+                    playHoverSound={playHoverSound}
+                  />
+                </div>
               </motion.div>
             )}
 
