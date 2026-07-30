@@ -3,34 +3,33 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    
-    <!-- Primary SEO Meta Tags -->
     <title>AeroFolio 3D | Luis Martinez - Full Stack Creative Engineer Portfolio</title>
     <meta name="description" content="Explore AeroFolio 3D, the immersive spatial portfolio of Luis Martinez. A Senior Full Stack Creative Engineer & UI Architect showcasing projects using React, Three.js, WebGL, and Gemini AI." />
     <meta name="keywords" content="Luis Martinez, AeroFolio, portfolio 3d, full stack engineer, frontend architect, react, three.js, webgl, R3F, gemini ai, AI developer, interactive web" />
     <meta name="author" content="Luis Martinez" />
     <meta name="robots" content="index, follow" />
-    
+    <meta name="theme-color" content="#030305" />
+    <link rel="canonical" href="https://aerofolio-3d.vercel.app" />
+
     <!-- Open Graph / Facebook / LinkedIn Meta Tags -->
     <meta property="og:type" content="website" />
     <meta property="og:title" content="AeroFolio 3D | Luis Martinez - Full Stack Creative Engineer" />
     <meta property="og:description" content="Explore an immersive spatial web experience merging 3D interactivity with Generative AI. Discover cutting-edge projects in React, WebGL, and LLM voice intelligence." />
     <meta property="og:url" content="https://aerofolio-3d.vercel.app" />
     <meta property="og:image" content="https://aerofolio-3d.vercel.app/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
     <meta property="og:site_name" content="AeroFolio 3D" />
     <meta property="og:locale" content="en_US" />
     <meta property="og:locale:alternate" content="es_ES" />
     <meta property="og:locale:alternate" content="zh_CN" />
-    
+
     <!-- Twitter Card Meta Tags -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="AeroFolio 3D | Luis Martinez - Full Stack Creative Engineer" />
     <meta name="twitter:description" content="Explore an immersive spatial web experience merging 3D interactivity with Generative AI. Discover cutting-edge projects in React, WebGL, and LLM voice intelligence." />
     <meta name="twitter:image" content="https://aerofolio-3d.vercel.app/og-image.png" />
-    
-    <!-- Canonical URL to prevent duplicate content -->
-    <link rel="canonical" href="https://aerofolio-3d.vercel.app" />
-    
+
     <!-- Multilingual Alternate SEO Linking (hreflang) -->
     <link rel="alternate" hreflang="en" href="https://aerofolio-3d.vercel.app/?lang=en" />
     <link rel="alternate" hreflang="es" href="https://aerofolio-3d.vercel.app/?lang=es" />
@@ -69,12 +68,25 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="dns-prefetch" href="https://fonts.googleapis.com">
+    <!-- GitHub profile data and avatars are fetched on load -->
+    <link rel="preconnect" href="https://api.github.com">
+    <link rel="dns-prefetch" href="https://avatars.githubusercontent.com">
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
     
     <style>
-      body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #030305; font-family: 'Inter', sans-serif;}
-      #root { width: 100%; height: 100%; }
+      body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; overflow-x: hidden; max-width: 100%; background-color: #030305; font-family: 'Inter', sans-serif;}
+      #root { width: 100%; height: 100%; overflow-x: hidden; }
+
+      /* Decorative animation is disabled when the user asks for reduced motion. */
+      @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+          scroll-behavior: auto !important;
+        }
+      }
       /* Custom scrollbar for overlay content */
       ::-webkit-scrollbar { width: 4px; }
       ::-webkit-scrollbar-track { background: transparent; }
@@ -102,7 +114,7 @@
       }
       .scanlines {
         position: fixed;
-        top: 0; left: 0; w: 100%; height: 100%; width: 100vw; height: 100vh;
+        top: 0; left: 0; width: 100%; height: 100%;
         pointer-events: none;
         z-index: 45;
         opacity: 0.15;

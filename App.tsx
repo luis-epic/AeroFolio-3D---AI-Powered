@@ -1,18 +1,18 @@
 
-import React, { useState, Suspense } from 'react';
-import { Canvas } from '@react-three/fiber';
-import { PerformanceMonitor, AdaptiveDpr } from '@react-three/drei';
+import React, { useState, Suspense, lazy } from 'react';
 import { Section } from './types';
 import Overlay from './components/Overlay';
-import Loader from './components/Loader';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
-import Experience from './components/Experience';
+import ErrorBoundary from './components/ErrorBoundary';
+
+// The 3D layer is code-split: the Three.js stack is large, and deferring it lets
+// the hero copy and navigation paint immediately instead of waiting on WebGL.
+const Scene = lazy(() => import('./components/Scene'));
 
 const AppContent: React.FC = () => {
   const [activeSection, setActiveSection] = useState<Section>('home');
   const [aiState, setAiState] = useState<'idle' | 'thinking'>('idle');
-  const [dpr, setDpr] = useState(1.5);
-  
+
   const { t } = useLanguage();
 
   const handleCloseOverlay = () => {
@@ -34,30 +34,20 @@ const AppContent: React.FC = () => {
         setAiState={setAiState}
       />
 
-      <div className="absolute inset-0 z-0 touch-none">
-        <Canvas
-          shadows
-          style={{ touchAction: 'none' }}
-          camera={{ position: [0, 4, 8], fov: 45, near: 0.1, far: 200 }}
-          dpr={dpr}
-          gl={{ 
-            antialias: true, 
-            preserveDrawingBuffer: false, 
-            alpha: false,
-            powerPreference: "high-performance"
-          }}
-        >
-          <PerformanceMonitor onDecline={() => setDpr(1)} onIncline={() => setDpr(1.5)} />
-          <AdaptiveDpr pixelated />
-          <Suspense fallback={<Loader />}>
-            <Experience 
-              activeSection={activeSection} 
+<<<<<<< HEAD
+      <div className="absolute inset-0 z-0">
+        {/* A WebGL crash must not take the whole portfolio down: the DOM overlay
+            stays usable if the 3D layer fails to initialise. */}
+        <ErrorBoundary>
+          <Suspense fallback={null}>
+            <Scene
+              activeSection={activeSection}
               setActiveSection={setActiveSection}
               labels={t.labels}
               aiState={aiState}
             />
           </Suspense>
-        </Canvas>
+        </ErrorBoundary>
       </div>
     </div>
   );

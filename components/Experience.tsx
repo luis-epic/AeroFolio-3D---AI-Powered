@@ -26,10 +26,56 @@ const GLITCH_DELAY = new Vector2(0, 0);
 const GLITCH_DURATION = new Vector2(0.1, 0.2);
 const GLITCH_STRENGTH = new Vector2(0.3, 0.5);
 
+/**
+ * Mobile camera adjustments per section, in world units.
+ *
+ * `dz` pulls the camera back because portrait viewports have a much narrower
+ * horizontal field of view. `targetDy` raises the look-at point: the base
+ * targets sit at the desk plane, but the models occupy roughly y=0..1.5, so
+ * without it every object projects above the screen centre and the dark floor
+ * eats the bottom half of a tall phone screen.
+ */
+const MOBILE_ADJUSTMENTS: Record<Section, { dy: number; dz: number; targetDy: number }> = {
+  // A higher camera looking down pushes the desk lower in the frame, clear of
+  // the hero copy overlaying the top third. Raising `targetDy` alone cannot do
+  // this: `maxPolarAngle` is clamped to PI/2, so the camera cannot tilt up.
+  home: { dy: 2.5, dz: 3.0, targetDy: 0.5 },
+  projects: { dy: 0.5, dz: 3.5, targetDy: 0.1 }, // laptop is wide; needs the largest pullback
+  about: { dy: 0, dz: 2.5, targetDy: 0.2 },
+  contact: { dy: 0, dz: 2.5, targetDy: 0.2 },
+};
+
+/**
+ * Single source of truth for camera placement.
+ *
+ * Always derived from the base config so offsets can never accumulate across
+ * renders or between the intro animation and section transitions.
+ */
+const getCameraConfig = (section: Section, isMobile: boolean) => {
+  const base = CAMERA_POSITIONS[section];
+  const target: [number, number, number] = [base.target[0], base.target[1], base.target[2]];
+
+  if (!isMobile) {
+    return { position: [base.position[0], base.position[1], base.position[2]] as [number, number, number], target };
+  }
+
+  const { dy, dz, targetDy } = MOBILE_ADJUSTMENTS[section];
+  return {
+    position: [base.position[0], base.position[1] + dy, base.position[2] + dz] as [number, number, number],
+    target: [target[0], target[1] + targetDy, target[2]] as [number, number, number],
+  };
+};
+
 const Experience: React.FC<ExperienceProps> = ({ activeSection, setActiveSection, labels, aiState }) => {
   const controlsRef = useRef<CameraControls>(null);
-  const { width } = useThree((state) => state.viewport);
-  const isMobile = width < 5; // Responsive breakpoint
+  // IMPORTANT: use `size` (canvas pixels), NOT `viewport` (three.js world units).
+  // `viewport.width` scales with camera distance, so deriving `isMobile` from it
+  // created a feedback loop: moving the camera changed `viewport.width`, which
+  // flipped `isMobile`, which re-ran the camera effect and pushed the camera
+  // further away until the scene left the frustum entirely (blank canvas on
+  // phones). `size.width` only changes on an actual resize.
+  const screenWidth = useThree((state) => state.size.width);
+  const isMobile = screenWidth < 768; // Responsive breakpoint (CSS pixels)
   
   // State to coordinate Laptop hover with TechOrbit
   const [isLaptopHovered, setIsLaptopHovered] = useState(false);
@@ -75,16 +121,14 @@ const Experience: React.FC<ExperienceProps> = ({ activeSection, setActiveSection
       // Start from a distant cinematic angle
       controlsRef.current.setPosition(0, 20, 25, false); 
       
-      // Zoom into the "Home" position smoothly
-      const homePos = CAMERA_POSITIONS.home.position;
-      const homeTarget = CAMERA_POSITIONS.home.target;
-
-      // Adjust intro end position for mobile immediately
-      const endPos = isMobile ? [homePos[0], homePos[1] + 1, homePos[2] + 4] : homePos;
+      // Zoom into the "Home" position smoothly. Uses the same helper as section
+      // transitions so the intro lands exactly where 'home' expects, with no
+      // jump when the section effect takes over.
+      const { position, target } = getCameraConfig('home', isMobile);
 
       controlsRef.current.setLookAt(
-        endPos[0], endPos[1], endPos[2], 
-        homeTarget[0], homeTarget[1], homeTarget[2], 
+        position[0], position[1], position[2],
+        target[0], target[1], target[2],
         true // animate
       ).then(() => {
          setIntroFinished(true);
@@ -99,37 +143,11 @@ const Experience: React.FC<ExperienceProps> = ({ activeSection, setActiveSection
       setTriggerGlitch(true);
       const timer = setTimeout(() => setTriggerGlitch(false), 400); // 0.4s glitch duration
 
-      const baseConfig = CAMERA_POSITIONS[activeSection];
-      
-      // Calculate responsive offsets
-      let targetPos = [...baseConfig.position];
-      let lookAtTarget = [...baseConfig.target];
-
-      if (isMobile) {
-        switch (activeSection) {
-            case 'home':
-                targetPos[1] += 1.5; // Higher
-                targetPos[2] += 5.0; // Further back
-                break;
-            case 'projects':
-                // Laptop is wide, needs significant pullback on narrow screens
-                targetPos[1] += 0.5; 
-                targetPos[2] += 3.5; // Pull back heavily to fit screen width
-                break;
-            case 'about':
-                // Brain centering
-                targetPos[2] += 2.5; 
-                break;
-            case 'contact':
-                // Phone fit
-                targetPos[2] += 2.5; 
-                break;
-        }
-      }
+      const { position, target } = getCameraConfig(activeSection, isMobile);
 
       controlsRef.current.setLookAt(
-        targetPos[0], targetPos[1], targetPos[2],
-        lookAtTarget[0], lookAtTarget[1], lookAtTarget[2],
+        position[0], position[1], position[2],
+        target[0], target[1], target[2],
         true // animated
       );
 
