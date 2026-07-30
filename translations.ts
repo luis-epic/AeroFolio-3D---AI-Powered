@@ -83,7 +83,10 @@ export const TRANSLATIONS = {
       repos: "Repositories",
       followers: "Followers",
       stars: "Stars",
-      fetching: "FETCHING DATA..."
+      fetching: "FETCHING DATA...",
+      rateLimited: "GitHub's hourly request limit was reached. Live stats will be back shortly.",
+      unavailable: "Live GitHub stats are unavailable right now.",
+      viewOnGitHub: "View profile on GitHub"
     }
   },
   es: {
@@ -167,7 +170,10 @@ export const TRANSLATIONS = {
       repos: "Repositorios",
       followers: "Seguidores",
       stars: "Estrellas",
-      fetching: "OBTENIENDO DATOS..."
+      fetching: "OBTENIENDO DATOS...",
+      rateLimited: "Se alcanzó el límite de peticiones por hora de GitHub. Las estadísticas volverán en breve.",
+      unavailable: "Las estadísticas de GitHub no están disponibles ahora mismo.",
+      viewOnGitHub: "Ver perfil en GitHub"
     }
   },
   zh: {
@@ -251,7 +257,10 @@ export const TRANSLATIONS = {
       repos: "代码仓库",
       followers: "关注者",
       stars: "星标",
-      fetching: "获取数据中..."
+      fetching: "获取数据中...",
+      rateLimited: "已达到 GitHub 每小时请求上限，实时数据稍后恢复。",
+      unavailable: "实时 GitHub 数据暂时无法获取。",
+      viewOnGitHub: "在 GitHub 上查看主页"
     }
   }
 };

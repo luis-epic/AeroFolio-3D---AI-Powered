@@ -6,8 +6,9 @@ import { generateAIResponse } from '../services/geminiService';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Language } from '../translations';
 import { playHoverSound, playClickSound } from '../utils/soundEngine';
-import { fetchGitHubProfile, GitHubProfile } from '../services/githubService';
+import { fetchGitHubProfile, type GitHubProfile, type GitHubFailureReason } from '../services/githubService';
 import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
+import { House, Laptop, BrainCircuit, Smartphone, Mic, Volume2, VolumeX, type LucideIcon } from 'lucide-react';
 
 interface OverlayProps {
   activeSection: Section;
@@ -193,7 +194,8 @@ const LanguageToggle: React.FC<{ language: Language; toggleLanguage: () => void 
     <button 
       onClick={() => { toggleLanguage(); playClickSound(); }}
       onMouseEnter={playHoverSound}
-      className="absolute top-8 right-8 z-50 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white px-3 py-1 rounded-full text-sm font-mono transition-all pointer-events-auto"
+      aria-label={`Change language. Current language: ${getLanguageLabel()}`}
+      className="absolute top-8 right-8 z-50 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white px-3 py-1 rounded-full text-sm font-mono transition-all pointer-events-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
     >
       {getLanguageLabel()}
     </button>
@@ -204,25 +206,35 @@ const LanguageToggle: React.FC<{ language: Language; toggleLanguage: () => void 
 const RecruiterHUD: React.FC<{ 
   activeSection: Section; 
   onNavigate: (s: Section) => void;
-  labels: any; 
+  labels: Record<Section, string>;
 }> = ({ activeSection, onNavigate, labels }) => {
-  const navItems: { id: Section; label: string; icon: string }[] = [
-    { id: 'home', label: labels.home, icon: '🏠' },
-    { id: 'projects', label: labels.projects, icon: '💻' },
-    { id: 'about', label: labels.about, icon: '🧠' },
-    { id: 'contact', label: labels.contact, icon: '📱' },
+  // Real icon components rather than emoji: emoji render inconsistently across
+  // platforms and are announced as their unicode name by screen readers.
+  const navItems: { id: Section; label: string; Icon: LucideIcon }[] = [
+    { id: 'home', label: labels.home, Icon: House },
+    { id: 'projects', label: labels.projects, Icon: Laptop },
+    { id: 'about', label: labels.about, Icon: BrainCircuit },
+    { id: 'contact', label: labels.contact, Icon: Smartphone },
   ];
 
   return (
-    <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 z-50 flex gap-4 pointer-events-auto">
+    <nav
+      aria-label="Main"
+      className="absolute bottom-10 left-1/2 transform -translate-x-1/2 z-50 flex gap-4 pointer-events-auto"
+    >
       <div className="bg-glass-dark backdrop-blur-2xl border border-glass-border rounded-full p-2 flex gap-1 md:gap-2 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
         {navItems.map((item) => (
           <button
             key={item.id}
             onClick={() => { onNavigate(item.id); playClickSound(); }}
             onMouseEnter={playHoverSound}
+            // The text label is hidden below `md`, so the button would otherwise
+            // have no accessible name at all on phones.
+            aria-label={item.label}
+            aria-current={activeSection === item.id ? 'page' : undefined}
             className={`
               relative px-4 py-2.5 rounded-full text-xs md:text-sm font-medium transition-all flex items-center gap-2 overflow-hidden
+              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70
               ${activeSection === item.id 
                 ? 'text-white' 
                 : 'text-gray-400 hover:text-white'}
@@ -235,12 +247,12 @@ const RecruiterHUD: React.FC<{
                 transition={{ type: "spring", stiffness: 400, damping: 30 }}
               />
             )}
-            <span className="relative z-10">{item.icon}</span>
+            <item.Icon aria-hidden="true" className="relative z-10 w-4 h-4 shrink-0" />
             <span className="relative z-10 hidden md:inline font-sans">{item.label}</span>
           </button>
         ))}
       </div>
-    </div>
+    </nav>
   );
 };
 
@@ -271,8 +283,10 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
   const [isTyping, setIsTyping] = useState(false);
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
-  // GitHub Data State
+  // GitHub Data State. `loading` is tracked separately from failure so the
+  // stats widget can stop showing a spinner forever when the request fails.
   const [githubData, setGithubData] = useState<GitHubProfile | null>(null);
+  const [githubError, setGithubError] = useState<GitHubFailureReason | null>(null);
 
   // TTS State
   const [isMuted, setIsMuted] = useState(false);
@@ -307,9 +321,17 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
 
   // Fetch GitHub Data on Mount (Global)
   useEffect(() => {
-    fetchGitHubProfile('luis-epic').then(data => {
-        if (data) setGithubData(data);
+  let cancelled = false;
+    fetchGitHubProfile('luis-epic').then(result => {
+      if (cancelled) return;
+      if (result.status === 'success') {
+        setGithubData(result.profile);
+        setGithubError(null);
+      } else {
+        setGithubError(result.reason);
+      }
     });
+    return () => { cancelled = true; };
   }, []);
 
   // Reset chat on language change
@@ -460,9 +482,10 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
             <button 
               onClick={() => { onClose(); playClickSound(); }}
               onMouseEnter={playHoverSound}
-              className="absolute top-4 right-4 z-50 bg-white/5 hover:bg-red-500/80 border border-white/10 text-white p-2 rounded-full transition-all"
+              aria-label="Close panel"
+              className="absolute top-4 right-4 z-50 bg-white/5 hover:bg-red-500/80 border border-white/10 text-white p-2 rounded-full transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
@@ -569,15 +592,24 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
                          }
                       }}
                       onMouseEnter={playHoverSound}
-                      className={`p-2 rounded-sm border border-white/10 transition-all ${isMuted ? 'bg-transparent text-gray-500' : 'bg-pink-500/20 text-pink-300 border-pink-500/50 shadow-[0_0_10px_rgba(236,72,153,0.3)]'}`}
-                      title={isMuted ? "Unmute Voice" : "Mute Voice"}
+                      className={`p-2 rounded-sm border border-white/10 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-400 ${isMuted ? 'bg-transparent text-gray-500' : 'bg-pink-500/20 text-pink-300 border-pink-500/50 shadow-[0_0_10px_rgba(236,72,153,0.3)]'}`}
+                      aria-label={isMuted ? 'Unmute assistant voice' : 'Mute assistant voice'}
+                      aria-pressed={!isMuted}
                     >
-                       {isMuted ? '🔇' : '🔊'}
+                       {isMuted
+                         ? <VolumeX aria-hidden="true" className="w-4 h-4" />
+                         : <Volume2 aria-hidden="true" className="w-4 h-4" />}
                     </button>
                   </div>
                   
                   {/* Terminal Output (Chat) */}
-                  <div ref={chatContainerRef} className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 md:space-y-6 scroll-smooth custom-scrollbar mask-gradient">
+                  <div
+                    ref={chatContainerRef}
+                    role="log"
+                    aria-live="polite"
+                    aria-label="Conversation with the AI assistant"
+                    className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 md:space-y-6 scroll-smooth custom-scrollbar mask-gradient"
+                  >
                     <AnimatePresence>
                     {chatHistory.map((msg, idx) => (
                       <motion.div 
@@ -638,7 +670,11 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
                   <div className="p-3 md:p-4 bg-glass-dark border-t border-glass-border backdrop-blur-2xl">
                     <form onSubmit={handleSendMessage} className="flex gap-2 relative group items-center">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-pink-500 font-mono text-sm md:text-lg animate-pulse">{'>'}</span>
+                      <label htmlFor="assistant-prompt" className="sr-only">
+                        {t.about.placeholder}
+                      </label>
                       <input 
+                        id="assistant-prompt"
                         type="text" 
                         value={prompt}
                         onChange={(e) => setPrompt(e.target.value)}
@@ -650,18 +686,17 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
                           type="button"
                           onClick={handleMicClick}
                           onMouseEnter={playHoverSound}
-                          className={`p-2.5 md:p-3 rounded-xl border transition-all flex-shrink-0 ${isListening ? 'bg-red-500/20 border-red-500 text-red-400' : 'bg-glass-light border-glass-border text-gray-400 hover:text-pink-400 hover:bg-pink-500/10 hover:border-pink-500/30'}`}
-                          title="Voice Input"
+                          className={`p-2.5 md:p-3 rounded-xl border transition-all flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-400 ${isListening ? 'bg-red-500/20 border-red-500 text-red-400' : 'bg-glass-light border-glass-border text-gray-400 hover:text-pink-400 hover:bg-pink-500/10 hover:border-pink-500/30'}`}
+                          aria-label={isListening ? 'Stop voice input' : 'Start voice input'}
+                          aria-pressed={isListening}
                       >
                           {isListening ? (
-                              <span className="relative flex h-4 w-4 md:h-5 md:w-5">
+                              <span aria-hidden="true" className="relative flex h-4 w-4 md:h-5 md:w-5">
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                                 <span className="relative inline-flex rounded-full h-4 w-4 md:h-5 md:w-5 bg-red-500"></span>
                               </span>
                           ) : (
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 md:h-5 md:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                              </svg>
+                              <Mic aria-hidden="true" className="h-4 w-4 md:h-5 md:w-5" />
                           )}
                       </button>
 
@@ -793,9 +828,27 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
                                <div className="text-[8px] md:text-[9px] text-emerald-400 uppercase tracking-widest">{t.stats.followers}</div>
                            </div>
                         </div>
-                    ) : (
-                        <div className="mb-6 h-12 w-full max-w-sm bg-emerald-900/10 animate-pulse rounded border border-emerald-500/10 flex items-center justify-center text-[9px] text-emerald-500">{t.stats.fetching}</div>
-                    )}
+                      ) : githubError ? (
+                      // Show an honest, actionable message instead of spinning
+                      // forever or displaying invented stats.
+                      <div className="mb-6 w-full max-w-sm rounded border border-emerald-500/20 bg-emerald-900/10 px-3 py-2.5 text-center">
+                        <p className="text-[9px] leading-relaxed text-emerald-300/80 font-mono">
+                          {githubError === 'rate-limited'
+                            ? t.stats.rateLimited
+                            : t.stats.unavailable}
+                        </p>
+                        <a
+                          href="https://github.com/luis-epic"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-1 inline-block text-[9px] font-mono text-emerald-400 underline decoration-dotted hover:text-emerald-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+                        >
+                          {t.stats.viewOnGitHub}
+                        </a>
+                      </div>
+                      ) : (
+                      <div className="mb-6 h-12 w-full max-w-sm bg-emerald-900/10 animate-pulse rounded border border-emerald-500/10 flex items-center justify-center text-[9px] text-emerald-500">{t.stats.fetching}</div>
+                      )}
 
                     <p className="text-emerald-100 mb-6 max-w-md font-mono text-sm text-center bg-black/40 p-4 border-l-2 border-emerald-500">
                        {t.contact.description}
