@@ -34,7 +34,6 @@ const AppContent: React.FC = () => {
         setAiState={setAiState}
       />
 
-<<<<<<< HEAD
       <div className="absolute inset-0 z-0">
         {/* A WebGL crash must not take the whole portfolio down: the DOM overlay
             stays usable if the 3D layer fails to initialise. */}
