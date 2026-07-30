@@ -497,14 +497,7 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
                   <p className="text-[10px] text-cyan-300/60 uppercase tracking-[0.2em] ml-5">SYSTEM.ROOT.PROJECTS</p>
                 </div>
                 
-                {/* Custom Interactive Projects Carousel */}
-                <div className="flex-1 overflow-hidden flex flex-col">
-                  <Projects 
-                    items={t.projects.items}
-                    playClickSound={playClickSound}
-                    playHoverSound={playHoverSound}
-                  />
-                </div>
+                {/* Projects content rendered in overlay */}
               </motion.div>
             )}
 
