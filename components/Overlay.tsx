@@ -7,6 +7,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { Language } from '../translations';
 import { playHoverSound, playClickSound } from '../utils/soundEngine';
 import { fetchGitHubProfile, GitHubProfile } from '../services/githubService';
+import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
 
 interface OverlayProps {
   activeSection: Section;
@@ -112,31 +113,72 @@ const CustomCursor: React.FC = () => {
 };
 
 // --- SCRAMBLE TEXT COMPONENT ---
+const SCRAMBLE_CHARS = "!<>-_\\/[]{}—=+*^?#________";
+const TICK_MS = 30;
+const MS_PER_LETTER = 45; // wall-clock time before one more letter is revealed
+const MAX_SCRAMBLE_MS = 2500; // hard cap so long strings still resolve quickly
+
+/**
+ * Decodes `text` from random characters.
+ *
+ * Accessibility: the animated characters are decorative noise, so they are
+ * hidden from assistive tech and the real text is exposed via a visually hidden
+ * span. Without this a screen reader announces garbage like
+ * "LUIS MART-?\^ FULL STAC=]_!/[". Honors `prefers-reduced-motion`.
+ */
 const ScrambleText: React.FC<{ text: string; className?: string }> = ({ text, className }) => {
+  const prefersReducedMotion = usePrefersReducedMotion();
   const [display, setDisplay] = useState(text);
-  const chars = "!<>-_\\/[]{}—=+*^?#________";
-  
+
   useEffect(() => {
-    let iteration = 0;
+    // Respect the motion preference: render the final text immediately.
+    if (prefersReducedMotion) {
+      setDisplay(text);
+      return;
+    }
+
+    // Progress is derived from elapsed wall-clock time, not from a tick counter.
+    // The 3D canvas can starve the main thread and throttle this interval, and a
+    // per-tick counter then crawled (~7 letters in 10s on a busy frame budget).
+    // Time-based progress always resolves within `duration` no matter how often
+    // the timer actually fires.
+    const startedAt = Date.now();
+    const duration = Math.min(text.length * MS_PER_LETTER, MAX_SCRAMBLE_MS);
+
     const interval = setInterval(() => {
+      const progress = (Date.now() - startedAt) / duration;
+
+      if (progress >= 1) {
+        // Guarantee the exact final string, then stop.
+        setDisplay(text);
+        clearInterval(interval);
+        return;
+      }
+
+      const revealed = Math.floor(progress * text.length);
+
       setDisplay(
         text
           .split("")
           .map((letter, index) => {
-            if (index < iteration) return text[index];
-            return chars[Math.floor(Math.random() * chars.length)];
+            if (index < revealed) return text[index];
+            // Preserve spaces so word shapes stay stable while decoding.
+            if (letter === " ") return " ";
+            return SCRAMBLE_CHARS[Math.floor(Math.random() * SCRAMBLE_CHARS.length)];
           })
           .join("")
       );
-
-      if (iteration >= text.length) clearInterval(interval);
-      iteration += 1 / 3; // Speed of decoding
-    }, 30);
+    }, TICK_MS);
 
     return () => clearInterval(interval);
-  }, [text]);
+  }, [text, prefersReducedMotion]);
 
-  return <span className={className}>{display}</span>;
+  return (
+    <span className={className}>
+      <span aria-hidden="true">{display}</span>
+      <span className="sr-only">{text}</span>
+    </span>
+  );
 };
 
 // Extracted component to prevent re-renders on parent state change
@@ -636,7 +678,7 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
                 </div>
                 
                 {/* Left/Top Side: Profile & Matrix (Fixed Width on Desktop) */}
-                <div className="w-full md:w-1/3 bg-black/40 flex flex-col p-6 overflow-y-auto order-1 md:order-2 border-b md:border-none border-white/5 relative">
+                <div className="w-full md:w-1/3 bg-black/40 flex flex-col p-6 shrink-0 md:shrink md:overflow-y-auto order-1 md:order-2 border-b md:border-none border-white/5 relative">
                   
                   {/* Status Indicator */}
                   <div className="absolute top-4 right-4 flex items-center gap-1">

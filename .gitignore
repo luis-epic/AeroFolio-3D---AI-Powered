@@ -1,4 +1,7 @@
 node_modules/
 dist/
+# Scratch build outputs used for bundle-size checks
+dist-*/
 .env
+.env.*.local
 .DS_Store
