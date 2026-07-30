@@ -12,6 +12,7 @@ export interface ProjectData {
   title: string;
   tech: string;
   description: string;
+  link?: string;
 }
 
 export interface ChatMessage {

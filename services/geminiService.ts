@@ -38,7 +38,7 @@ export const generateAIResponse = async (prompt: string, language: 'en' | 'es' |
   }
 
   try {
-    const modelId = 'gemini-3-flash-preview';
+    const modelId = 'gemini-3.5-flash';
     
     // RAG-LITE: Inject project data directly into the system context
     const projectsContext = JSON.stringify(MOCK_PROJECTS.map(p => ({

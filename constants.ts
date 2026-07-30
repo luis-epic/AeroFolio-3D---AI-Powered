@@ -25,25 +25,36 @@ export const MOCK_PROJECTS: ProjectData[] = [
     id: 0,
     title: "AeroFolio 3D",
     tech: "R3F, Gemini AI, TypeScript, Next.js",
-    description: "An immersive spatial web experience merging 3D interactivity with Generative AI. Features a physics-based environment and LLM-powered voice assistant."
+    description: "An immersive spatial web experience merging 3D interactivity with Generative AI. Features a physics-based environment and LLM-powered voice assistant.",
+    link: "https://aerofolio-3d.vercel.app"
   },
   {
     id: 1,
     title: "Neural Vision Edge",
     tech: "Python, TensorFlow Lite, FastAPI",
-    description: "Serverless computer vision architecture capable of 60 FPS object detection on IoT devices."
+    description: "Serverless computer vision architecture capable of 60 FPS object detection on IoT devices.",
+    link: "https://neural-vision-edge.vercel.app"
   },
   {
     id: 2,
     title: "EcoData Geospatial",
     tech: "React, WebGL, D3.js, Node.js",
-    description: "High-performance dashboard visualizing terabytes of real-time climate data using instanced rendering."
+    description: "High-performance dashboard visualizing terabytes of real-time climate data using instanced rendering.",
+    link: "https://ecodata-geospatial.vercel.app"
   },
   {
     id: 3,
     title: "CryptoSentinel DeFi",
     tech: "Solidity, Graph Protocol, Next.js",
-    description: "Automated smart contract auditor utilizing historical on-chain data to predict liquidity exploits."
+    description: "Automated smart contract auditor utilizing historical on-chain data to predict liquidity exploits.",
+    link: "https://crypto-sentinel-defi.vercel.app"
+  },
+  {
+    id: 4,
+    title: "Royal Vision Suite",
+    tech: "React, Supabase, TypeScript, TailwindCSS, PostgreSQL",
+    description: "Comprehensive ERP system designed for opticians and visual health centers. Manages clinical patient records, vision exams, automated scheduling, inventory control, and real-time sales reporting.",
+    link: "https://royal-vision-suite.vercel.app"
   }
 ];
 

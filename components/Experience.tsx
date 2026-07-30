@@ -4,6 +4,7 @@ import { useThree, ThreeElements } from '@react-three/fiber';
 import { Vector2 } from 'three';
 import { CameraControls, Environment, MeshReflectorMaterial, ContactShadows, CameraShake, BakeShadows, Preload, AdaptiveEvents } from '@react-three/drei';
 import { EffectComposer, Bloom, Vignette, Glitch } from '@react-three/postprocessing';
+import CameraControlsImpl from 'camera-controls';
 import { Laptop, Brain, Smartphone, TechOrbit, ResumePaper, CoffeeMug, HoloProjector } from './SceneElements';
 import { CAMERA_POSITIONS } from '../constants';
 import { Section } from '../types';
@@ -42,8 +43,31 @@ const Experience: React.FC<ExperienceProps> = ({ activeSection, setActiveSection
       controlsRef.current.minDistance = 1.0;
       // Increased maxDistance to allow freedom without clipping
       controlsRef.current.maxDistance = 1000;
+
+      // Explicitly configure touch gestures for responsive mobile interactions
+      controlsRef.current.touches.one = CameraControlsImpl.ACTION.TOUCH_ROTATE;
+      controlsRef.current.touches.two = CameraControlsImpl.ACTION.TOUCH_DOLLY_TRUCK;
     }
   }, []);
+
+  // Listen for camera reset custom events (specifically useful on mobile)
+  useEffect(() => {
+    const handleReset = () => {
+      if (controlsRef.current) {
+        const homePos = CAMERA_POSITIONS.home.position;
+        const homeTarget = CAMERA_POSITIONS.home.target;
+        const endPos = isMobile ? [homePos[0], homePos[1] + 1, homePos[2] + 4] : homePos;
+        controlsRef.current.setLookAt(
+          endPos[0], endPos[1], endPos[2],
+          homeTarget[0], homeTarget[1], homeTarget[2],
+          true // animate
+        );
+      }
+    };
+
+    window.addEventListener('reset-camera', handleReset);
+    return () => window.removeEventListener('reset-camera', handleReset);
+  }, [isMobile]);
 
   // STRATEGY 5: CINEMATIC INTRO
   useEffect(() => {

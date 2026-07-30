@@ -34,9 +34,10 @@ const AppContent: React.FC = () => {
         setAiState={setAiState}
       />
 
-      <div className="absolute inset-0 z-0">
+      <div className="absolute inset-0 z-0 touch-none">
         <Canvas
           shadows
+          style={{ touchAction: 'none' }}
           camera={{ position: [0, 4, 8], fov: 45, near: 0.1, far: 200 }}
           dpr={dpr}
           gl={{ 

@@ -7,6 +7,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { Language } from '../translations';
 import { playHoverSound, playClickSound } from '../utils/soundEngine';
 import { fetchGitHubProfile, GitHubProfile } from '../services/githubService';
+import { Projects } from './Projects';
 
 interface OverlayProps {
   activeSection: Section;
@@ -353,7 +354,11 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
 
   const handleNav = (section: Section) => {
     React.startTransition(() => {
-      if (section === 'home') onClose();
+      if (section === 'home') {
+        onClose();
+        // Dispatch reset camera event to reset the 3D scene view smoothly
+        window.dispatchEvent(new CustomEvent('reset-camera'));
+      }
       else setActiveSection(section);
     });
   };
@@ -401,10 +406,35 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
       <LanguageToggle language={language} toggleLanguage={toggleLanguage} />
       <RecruiterHUD activeSection={activeSection} onNavigate={handleNav} labels={t.labels} />
 
+      {/* Mobile Touch Gesture HUD (Tactical Polish) */}
+      {!visible && (
+        <div className="absolute bottom-24 left-1/2 transform -translate-x-1/2 z-10 md:hidden flex flex-col items-center gap-1.5 pointer-events-none">
+          <div className="flex items-center gap-3 bg-black/80 backdrop-blur-md px-4 py-2 rounded-full border border-white/10 shadow-[0_4px_16px_rgba(0,0,0,0.6)]">
+            <span className="text-[10px] font-mono text-cyan-400 tracking-wider flex items-center gap-1">
+              👆 {language === 'en' ? 'Drag to rotate' : language === 'es' ? 'Arrastra para rotar' : '拖拽旋转'}
+            </span>
+            <div className="w-[1px] h-3 bg-white/20" />
+            <span className="text-[10px] font-mono text-pink-400 tracking-wider flex items-center gap-1">
+              ✌️ {language === 'en' ? 'Pinch to zoom' : language === 'es' ? 'Pellizca para zoom' : '捏合缩放'}
+            </span>
+          </div>
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              playClickSound();
+              window.dispatchEvent(new CustomEvent('reset-camera'));
+            }}
+            className="pointer-events-auto bg-white/10 hover:bg-white/20 active:bg-white/30 text-white border border-white/10 rounded-full px-3 py-1 text-[9px] font-mono tracking-wider transition-all shadow-md uppercase"
+          >
+            🔄 {language === 'en' ? 'RESET VIEW' : language === 'es' ? 'REINICIAR VISTA' : '重置视角'}
+          </button>
+        </div>
+      )}
+
       <div 
         className={`absolute inset-0 z-20 flex items-center justify-center transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${visible ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none filter blur-sm'}`}
       >
-        <div className="relative w-full max-w-5xl h-[75vh] flex flex-col mt-10 md:mt-0 p-4 md:p-6 md:px-10">
+        <div className="relative w-full max-w-5xl h-[80vh] flex flex-col mt-10 md:mt-0 p-4 md:p-6 md:px-10">
           
           <div className="flex-1 bg-glass-dark backdrop-blur-3xl border border-glass-border rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col md:flex-row relative group">
             
@@ -434,7 +464,7 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
                 className="flex flex-col w-full h-full"
               >
                 {/* Header */}
-                <div className="p-6 pt-12 pr-16 border-b border-white/10 bg-gradient-to-r from-blue-500/10 via-cyan-500/5 to-transparent">
+                <div className="p-4 pt-11 md:p-5 md:pt-11 pr-16 border-b border-white/10 bg-gradient-to-r from-blue-500/10 via-cyan-500/5 to-transparent">
                   <h2 className="text-xl font-bold text-cyan-400 flex items-center gap-3 font-mono tracking-widest">
                      <span className="w-2 h-2 bg-cyan-500 animate-pulse rounded-full shadow-[0_0_8px_#22d3ee]"></span>
                      <ScrambleText text={t.projects.title} />
@@ -442,58 +472,13 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
                   <p className="text-[10px] text-cyan-300/60 uppercase tracking-[0.2em] ml-5">SYSTEM.ROOT.PROJECTS</p>
                 </div>
                 
-                {/* Bento Grid layout for projects */}
-                <div className="p-4 md:p-8 w-full overflow-y-auto scroll-smooth custom-scrollbar mask-gradient">
-                  <div className="grid grid-cols-1 md:grid-cols-6 auto-rows-[minmax(220px,auto)] gap-4 md:gap-6 pb-20">
-                    {t.projects.items.map((project: any, i: number) => {
-                      // Make the first project span more columns to create a bento box feel
-                      const colSpan = i === 0 ? "md:col-span-4" : i === 1 ? "md:col-span-2" : i === 2 ? "md:col-span-3" : "md:col-span-3";
-                      
-                      return (
-                        <motion.div 
-                          initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                          animate={{ opacity: 1, scale: 1, y: 0 }}
-                          transition={{ type: "spring", stiffness: 300, damping: 24, delay: i * 0.1 }}
-                          key={project.id} 
-                          className={`relative group bg-glass-dark border border-glass-border p-6 md:p-8 rounded-3xl hover:border-pink-500/40 hover:bg-glass-light transition-all duration-500 hover:shadow-[0_8px_32px_rgba(236,72,153,0.15)] overflow-hidden flex flex-col justify-between ${colSpan}`}
-                        >
-                           {/* Hover Glow Effect */}
-                           <div className="absolute -inset-0 bg-gradient-to-br from-pink-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-                           
-                           {/* Content Top */}
-                           <div className="z-10">
-                             <div className="flex justify-between items-start mb-4">
-                               <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
-                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-300 group-hover:text-pink-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-                                  </svg>
-                               </div>
-                               <span className="text-[10px] font-mono text-gray-500 bg-white/5 px-3 py-1 rounded-full uppercase tracking-widest border border-white/5 group-hover:border-pink-500/20 group-hover:text-pink-300 transition-colors">
-                                 PRJ-0{project.id}
-                               </span>
-                             </div>
-                             
-                             <h3 className="text-xl md:text-2xl font-bold text-white mb-3 tracking-tight font-display group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-white group-hover:to-pink-200 transition-all">
-                                {project.title}
-                             </h3>
-                             
-                             <p className="text-gray-400 text-sm font-sans leading-relaxed mb-6 group-hover:text-gray-300 transition-colors line-clamp-3">
-                                {project.description}
-                             </p>
-                           </div>
-
-                           {/* Content Bottom: Tech Stack */}
-                           <div className="flex flex-wrap gap-2 mt-auto z-10 pt-4 border-t border-white/5 group-hover:border-white/10 transition-colors">
-                              {project.tech.split(',').map((tech: string, idx: number) => (
-                                <span key={idx} className="text-[11px] text-gray-300 bg-white/5 border border-white/10 px-3 py-1 rounded-full font-medium shadow-sm group-hover:bg-pink-500/10 group-hover:border-pink-500/20 group-hover:text-pink-100 transition-all duration-300">
-                                    {tech.trim()}
-                                </span>
-                              ))}
-                           </div>
-                        </motion.div>
-                      );
-                    })}
-                  </div>
+                {/* Custom Interactive Projects Carousel */}
+                <div className="flex-1 overflow-hidden flex flex-col">
+                  <Projects 
+                    items={t.projects.items}
+                    playClickSound={playClickSound}
+                    playHoverSound={playHoverSound}
+                  />
                 </div>
               </motion.div>
             )}

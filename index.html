@@ -3,7 +3,68 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AeroFolio 3D | AI Portfolio</title>
+    
+    <!-- Primary SEO Meta Tags -->
+    <title>AeroFolio 3D | Luis Martinez - Full Stack Creative Engineer Portfolio</title>
+    <meta name="description" content="Explore AeroFolio 3D, the immersive spatial portfolio of Luis Martinez. A Senior Full Stack Creative Engineer & UI Architect showcasing projects using React, Three.js, WebGL, and Gemini AI." />
+    <meta name="keywords" content="Luis Martinez, AeroFolio, portfolio 3d, full stack engineer, frontend architect, react, three.js, webgl, R3F, gemini ai, AI developer, interactive web" />
+    <meta name="author" content="Luis Martinez" />
+    <meta name="robots" content="index, follow" />
+    
+    <!-- Open Graph / Facebook / LinkedIn Meta Tags -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="AeroFolio 3D | Luis Martinez - Full Stack Creative Engineer" />
+    <meta property="og:description" content="Explore an immersive spatial web experience merging 3D interactivity with Generative AI. Discover cutting-edge projects in React, WebGL, and LLM voice intelligence." />
+    <meta property="og:url" content="https://aerofolio-3d.vercel.app" />
+    <meta property="og:image" content="https://aerofolio-3d.vercel.app/og-image.png" />
+    <meta property="og:site_name" content="AeroFolio 3D" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:locale:alternate" content="es_ES" />
+    <meta property="og:locale:alternate" content="zh_CN" />
+    
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="AeroFolio 3D | Luis Martinez - Full Stack Creative Engineer" />
+    <meta name="twitter:description" content="Explore an immersive spatial web experience merging 3D interactivity with Generative AI. Discover cutting-edge projects in React, WebGL, and LLM voice intelligence." />
+    <meta name="twitter:image" content="https://aerofolio-3d.vercel.app/og-image.png" />
+    
+    <!-- Canonical URL to prevent duplicate content -->
+    <link rel="canonical" href="https://aerofolio-3d.vercel.app" />
+    
+    <!-- Multilingual Alternate SEO Linking (hreflang) -->
+    <link rel="alternate" hreflang="en" href="https://aerofolio-3d.vercel.app/?lang=en" />
+    <link rel="alternate" hreflang="es" href="https://aerofolio-3d.vercel.app/?lang=es" />
+    <link rel="alternate" hreflang="zh" href="https://aerofolio-3d.vercel.app/?lang=zh" />
+    <link rel="alternate" hreflang="x-default" href="https://aerofolio-3d.vercel.app/" />
+
+    <!-- Schema.org JSON-LD Structured Data for Rich Search Results -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Person",
+        "name": "Luis Martinez",
+        "jobTitle": "Full Stack Creative Engineer & UI Architect",
+        "url": "https://aerofolio-3d.vercel.app",
+        "sameAs": [
+          "https://github.com/luis-epic",
+          "https://www.linkedin.com/in/luisepico/"
+        ],
+        "knowsAbout": [
+          "Full Stack Development",
+          "React",
+          "Three.js",
+          "WebGL",
+          "TypeScript",
+          "Generative AI",
+          "Vite",
+          "Next.js",
+          "Supabase"
+        ],
+        "description": "An immersive spatial web experience merging 3D interactivity with Generative AI.",
+        "image": "https://avatars.githubusercontent.com/luis-epic"
+      }
+    </script>
+
     <!-- Preconnect and dns-prefetch for performance -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -49,16 +110,6 @@
         background-size: 100% 4px;
       }
     </style>
-    <!-- Restore path redirected via 404.html for SPA routing on GitHub Pages -->
-    <script>
-      (function() {
-        var redirect = sessionStorage.getItem('redirect');
-        sessionStorage.removeItem('redirect');
-        if (redirect && redirect !== location.href) {
-          history.replaceState(null, null, redirect);
-        }
-      })();
-    </script>
     <!-- Shim process to prevent process is not defined errors in prod with Node SDKs -->
     <script>
       window.process = {
