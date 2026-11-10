@@ -37,11 +37,11 @@ const ContactLinks: React.FC<ContactLinksProps> = ({ copy }) => {
             target={link.external ? '_blank' : undefined}
             rel={link.external ? 'noopener noreferrer' : undefined}
             onMouseEnter={playHoverSound}
-            className="group flex w-full items-center gap-4 rounded-lg border border-emerald-400/50 bg-black/60 p-4 transition-colors hover:border-emerald-300 hover:bg-emerald-500/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
+            className="group flex w-full items-center gap-4 rounded-xl border border-emerald-400/30 bg-white/[0.04] p-4 transition-colors hover:border-emerald-400/60 hover:bg-emerald-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
           >
             <span
               aria-hidden="true"
-              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-emerald-400 font-mono text-sm font-bold text-black"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-400 font-mono text-sm font-bold text-black"
             >
               {link.glyph}
             </span>

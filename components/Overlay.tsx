@@ -30,11 +30,22 @@ interface OverlayProps {
 const CustomCursor: React.FC = () => {
   const cursorRef = useRef<HTMLDivElement>(null);
   const ringRef = useRef<HTMLDivElement>(null);
-  const [hovering, setHovering] = useState(false);
+  // Touch devices have no pointer to replace.
+  const [enabled] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(pointer: fine)').matches
+  );
+  // Hover comes from two sources (DOM controls and 3D objects); tracking them
+  // separately keeps one from cancelling the other.
+  const [domHover, setDomHover] = useState(false);
+  const [sceneHover, setSceneHover] = useState(false);
+  const hovering = domHover || sceneHover;
   const pos = useRef({ x: -100, y: -100 });
   const ringPos = useRef({ x: -100, y: -100 });
 
   useEffect(() => {
+    if (!enabled) return;
+    document.documentElement.classList.add('custom-cursor');
+
     const onMouseMove = (e: MouseEvent) => {
       pos.current = { x: e.clientX, y: e.clientY };
       // Show cursor on first move
@@ -42,41 +53,31 @@ const CustomCursor: React.FC = () => {
       if (ringRef.current) ringRef.current.style.opacity = "1";
     };
 
-    const onHoverStart = () => setHovering(true);
-    const onHoverEnd = () => setHovering(false);
-
-    window.addEventListener('mousemove', onMouseMove);
-    window.addEventListener('cursor-hover-start', onHoverStart);
-    window.addEventListener('cursor-hover-end', onHoverEnd);
+    const onSceneHoverStart = () => setSceneHover(true);
+    const onSceneHoverEnd = () => setSceneHover(false);
 
     const onMouseOver = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (target.tagName === 'BUTTON' || target.tagName === 'A' || target.tagName === 'INPUT' || target.closest('button') || target.closest('a')) {
-        setHovering(true);
-      }
-    };
-    
-    const onMouseOut = (e: MouseEvent) => {
-       const target = e.target as HTMLElement;
-       if (target.tagName === 'BUTTON' || target.tagName === 'A') {
-         setHovering(false);
-       }
+      const target = e.target as Element | null;
+      setDomHover(Boolean(target?.closest?.('button:not(:disabled), a[href], input, textarea, select, [role="button"]')));
     };
 
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('cursor-hover-start', onSceneHoverStart);
+    window.addEventListener('cursor-hover-end', onSceneHoverEnd);
     document.addEventListener('mouseover', onMouseOver);
-    document.addEventListener('mouseout', onMouseOut);
 
     return () => {
+      document.documentElement.classList.remove('custom-cursor');
       window.removeEventListener('mousemove', onMouseMove);
-      window.removeEventListener('cursor-hover-start', onHoverStart);
-      window.removeEventListener('cursor-hover-end', onHoverEnd);
+      window.removeEventListener('cursor-hover-start', onSceneHoverStart);
+      window.removeEventListener('cursor-hover-end', onSceneHoverEnd);
       document.removeEventListener('mouseover', onMouseOver);
-      document.removeEventListener('mouseout', onMouseOut);
     };
-  }, []);
+  }, [enabled]);
 
   // Animation Loop for smooth trailing
   useEffect(() => {
+    if (!enabled) return;
     let frame: number;
     const animate = () => {
       // INCREASED SPEED: Changed 0.15 to 0.35 for a snappier, responsive feel
@@ -91,7 +92,9 @@ const CustomCursor: React.FC = () => {
     };
     frame = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(frame);
-  }, []);
+  }, [enabled]);
+
+  if (!enabled) return null;
 
   return (
     <>
@@ -141,6 +144,11 @@ const LanguageToggle: React.FC<{ language: Language; toggleLanguage: () => void 
     </button>
   );
 };
+
+// Shared by the projects, assistant and contact panels so they read as one system.
+const PANEL_HEADER_CLASS = 'px-5 pt-11 pb-4 md:px-6 border-b border-white/10 bg-gradient-to-r';
+const PANEL_TITLE_CLASS = 'text-lg md:text-xl font-bold flex items-center gap-3 font-mono tracking-widest';
+const PANEL_SUBTITLE_CLASS = 'text-[10px] uppercase tracking-[0.2em] ml-5';
 
 const TOP_BUTTON_CLASS =
   'inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white px-3 py-1 rounded-full text-sm font-mono transition-all pointer-events-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70';
@@ -387,9 +395,9 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
       />
 
       <div 
-        className={`absolute inset-0 z-20 flex items-center justify-center transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${visible ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none filter blur-sm'}`}
+        className={`absolute inset-0 z-20 flex items-center justify-center pt-20 pb-28 transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${visible ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none filter blur-sm'}`}
       >
-        <div className="relative w-full max-w-5xl h-[80vh] flex flex-col mt-10 md:mt-0 p-4 md:p-6 md:px-10">
+        <div className="relative w-full max-w-5xl h-full max-h-[720px] flex flex-col px-4 md:px-10">
           
           <div className="flex-1 bg-glass-dark backdrop-blur-3xl border border-glass-border rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col md:flex-row relative group">
             
@@ -420,16 +428,16 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
                 className="flex flex-col w-full h-full"
               >
                 {/* Header */}
-                <div className="p-4 pt-11 md:p-5 md:pt-11 pr-16 border-b border-white/10 bg-gradient-to-r from-blue-500/10 via-cyan-500/5 to-transparent">
-                  <h2 className="text-xl font-bold text-cyan-400 flex items-center gap-3 font-mono tracking-widest">
+                <div className={`${PANEL_HEADER_CLASS} pr-16 from-cyan-500/10 via-cyan-500/5 to-transparent`}>
+                  <h2 className={`${PANEL_TITLE_CLASS} text-cyan-400`}>
                      <span className="w-2 h-2 bg-cyan-500 animate-pulse rounded-full shadow-[0_0_8px_#22d3ee]"></span>
                      <ScrambleText text={t.projects.title} />
                   </h2>
-                  <p className="text-[10px] text-cyan-300/60 uppercase tracking-[0.2em] ml-5">SYSTEM.ROOT.PROJECTS</p>
+                  <p className={`${PANEL_SUBTITLE_CLASS} text-cyan-300/60`}>SYSTEM.ROOT.PROJECTS</p>
                 </div>
                 
                 {/* Projects carousel */}
-                <div className="flex-1 overflow-hidden flex flex-col">
+                <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
                   <Projects 
                     items={t.projects.items}
                     playClickSound={playClickSound}
@@ -449,15 +457,15 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
               >
                 
                 {/* Right/Bottom Side: Terminal Chat (Takes remaining space) */}
-                <div className="flex-1 flex flex-col w-full h-full md:border-l border-white/10 relative order-2 md:order-1">
+                <div className="flex-1 min-w-0 min-h-0 flex flex-col relative order-2 md:order-1">
                   {/* Header HUD */}
-                  <div className="p-4 pt-10 md:p-6 md:pt-12 border-b border-white/10 bg-gradient-to-r from-pink-500/10 via-purple-500/5 to-transparent flex justify-between items-center">
+                  <div className={`${PANEL_HEADER_CLASS} from-pink-500/10 via-pink-500/5 to-transparent flex justify-between items-center gap-3`}>
                     <div>
-                      <h2 className="text-lg md:text-xl font-bold text-pink-400 flex items-center gap-3 font-mono tracking-widest">
+                      <h2 className={`${PANEL_TITLE_CLASS} text-pink-400`}>
                          <span className="w-2 h-2 bg-pink-500 animate-pulse rounded-full shadow-[0_0_8px_#ec4899]"></span>
                          <ScrambleText text={t.about.title} />
                       </h2>
-                      <p className="text-[9px] md:text-[10px] text-pink-300/60 uppercase tracking-[0.2em] ml-5">{t.about.subtitle}</p>
+                      <p className={`${PANEL_SUBTITLE_CLASS} text-pink-300/60`}>{t.about.subtitle}</p>
                     </div>
                     <button 
                       onClick={() => {
@@ -468,7 +476,7 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
                          }
                       }}
                       onMouseEnter={playHoverSound}
-                      className={`p-2 rounded-sm border border-white/10 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-400 ${isMuted ? 'bg-transparent text-gray-500' : 'bg-pink-500/20 text-pink-300 border-pink-500/50 shadow-[0_0_10px_rgba(236,72,153,0.3)]'}`}
+                      className={`p-2 rounded-lg border border-white/10 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-400 ${isMuted ? 'bg-transparent text-gray-500' : 'bg-pink-500/20 text-pink-300 border-pink-500/50 shadow-[0_0_10px_rgba(236,72,153,0.3)]'}`}
                       aria-label={isMuted ? 'Unmute assistant voice' : 'Mute assistant voice'}
                       aria-pressed={!isMuted}
                     >
@@ -495,10 +503,10 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
                         transition={{ type: "spring", stiffness: 400, damping: 25 }}
                         className={`flex w-full ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                       >
-                        <div className={`relative max-w-[90%] md:max-w-[85%] p-4 md:p-5 text-sm font-mono leading-relaxed shadow-lg backdrop-blur-md transition-all duration-300
+                        <div className={`relative max-w-[90%] md:max-w-[85%] p-4 text-sm font-mono leading-relaxed border border-pink-400/30 rounded-xl
                           ${msg.role === 'user' 
-                            ? 'bg-glass-light border border-blue-500/30 text-blue-100 rounded-2xl rounded-tr-none shadow-[0_0_15px_rgba(37,99,235,0.1)]' 
-                            : 'bg-glass-dark border border-pink-500/30 text-pink-100 rounded-2xl rounded-tl-none shadow-[0_0_15px_rgba(236,72,153,0.1)]'
+                            ? 'bg-pink-500/15 text-white rounded-tr-none' 
+                            : 'bg-white/[0.04] text-pink-100 rounded-tl-none'
                         }`}>
                            {msg.role === 'model' && (
                               <span className="absolute -top-2 left-4 text-[9px] bg-pink-500/20 border border-pink-500/30 text-pink-300 px-1.5 py-0.5 rounded uppercase tracking-wider hidden md:block">Sys.Log</span>
@@ -516,7 +524,7 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
                          exit={{ opacity: 0, scale: 0.9 }}
                          className="flex justify-start"
                        >
-                         <div className="bg-glass-dark border border-pink-500/30 p-3 rounded-2xl rounded-tl-none flex gap-2 items-center">
+                         <div className="bg-white/[0.04] border border-pink-400/30 p-3 rounded-xl rounded-tl-none flex gap-2 items-center">
                            <div className="w-1.5 h-1.5 bg-pink-500 rounded-full animate-bounce"></div>
                            <div className="w-1.5 h-1.5 bg-pink-500 rounded-full animate-bounce delay-75"></div>
                            <div className="w-1.5 h-1.5 bg-pink-500 rounded-full animate-bounce delay-150"></div>
@@ -589,20 +597,20 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
                 </div>
                 
                 {/* Left/Top Side: Profile & Matrix (Fixed Width on Desktop) */}
-                <div className="w-full md:w-1/3 bg-black/40 flex flex-col p-6 shrink-0 md:shrink md:overflow-y-auto order-1 md:order-2 border-b md:border-none border-white/5 relative">
+                <div className="w-full md:w-72 bg-black/40 flex flex-col p-5 pt-11 shrink-0 max-h-[40%] md:max-h-none overflow-y-auto custom-scrollbar order-1 md:order-2 border-b md:border-b-0 md:border-l border-white/10 relative">
                   
                   {/* Status Indicator */}
-                  <div className="absolute top-4 right-4 flex items-center gap-1">
+                  <div className="absolute top-4 left-24 md:left-5 flex items-center gap-1">
                     <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_5px_#22c55e]"></span>
                     <span className="text-[8px] font-mono text-green-500 tracking-widest">{t.stats.online}</span>
                   </div>
 
-                  <div className="mt-8 md:mt-2 text-center">
+                  <div className="text-center">
                     <div className="w-20 h-20 md:w-24 md:h-24 mx-auto border-2 border-pink-500/50 rounded-full overflow-hidden shadow-[0_0_20px_rgba(236,72,153,0.3)] mb-4 bg-gray-800">
                       <img src={githubData?.avatar_url || 'https://avatars.githubusercontent.com/luis-epic'} alt="Profile" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.src = 'https://api.dicebear.com/7.x/identicon/svg?seed=luis-epic&backgroundColor=1f2937'; }} />
                     </div>
                     <h3 className="text-white font-mono text-lg font-bold"><ScrambleText text={githubData?.name || "Luis Martinez"} /></h3>
-                    <p className="text-pink-400 text-xs font-mono mb-2">{githubData?.bio || "Sr. SWE / UI Architect"}</p>
+                    <p className="text-pink-300 text-xs font-mono leading-relaxed text-pretty mb-2">{githubData?.bio || "Sr. SWE / UI Architect"}</p>
                     
                     {/* Location Pill */}
                     {githubData?.location && (
@@ -673,15 +681,15 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
                 className="flex flex-col w-full h-full"
               >
                 {/* Header HUD */}
-                <div className="p-6 pt-12 pr-16 border-b border-white/10 bg-gradient-to-r from-emerald-500/10 via-green-500/5 to-transparent">
-                  <h2 className="text-xl font-bold text-emerald-400 flex items-center gap-3 font-mono tracking-widest">
+                <div className={`${PANEL_HEADER_CLASS} pr-16 from-emerald-500/10 via-emerald-500/5 to-transparent`}>
+                  <h2 className={`${PANEL_TITLE_CLASS} text-emerald-400`}>
                      <span className="w-2 h-2 bg-emerald-500 animate-pulse rounded-full shadow-[0_0_8px_#10b981]"></span>
                      <ScrambleText text={t.contact.title} />
                   </h2>
-                  <p className="text-[10px] text-emerald-300/60 uppercase tracking-[0.2em] ml-5">{t.stats.signalOpen}</p>
+                  <p className={`${PANEL_SUBTITLE_CLASS} text-emerald-300/60`}>{t.stats.signalOpen}</p>
                 </div>
 
-                <div className="flex-1 flex flex-col items-center justify-center overflow-y-auto p-6 md:p-8 relative">
+                <div className="flex-1 flex flex-col items-center [justify-content:safe_center] overflow-y-auto custom-scrollbar p-5 md:p-6 relative">
                     {/* Background Decor */}
                     <div className="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none">
                        <div className="w-96 h-96 border border-emerald-500/30 rounded-full animate-spin-slow border-t-transparent"></div>
@@ -696,7 +704,7 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
                              { label: t.stats.stars, value: githubData.stars || 0 },
                              { label: t.stats.followers, value: githubData.followers },
                            ].map((stat) => (
-                             <div key={stat.label} className="flex flex-col-reverse rounded-lg border border-emerald-400/40 bg-black/60 px-2 py-3 text-center">
+                             <div key={stat.label} className="flex flex-col-reverse rounded-xl border border-emerald-400/30 bg-white/[0.04] px-2 py-3 text-center">
                                <dt className="mt-1 text-[11px] uppercase tracking-wider text-emerald-300">{stat.label}</dt>
                                <dd className="text-2xl font-bold text-white font-mono">{stat.value}</dd>
                              </div>

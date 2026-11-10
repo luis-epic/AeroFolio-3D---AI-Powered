@@ -47,7 +47,7 @@ const Navigation: React.FC<NavigationProps> = ({ activeSection, onNavigate, labe
             aria-label={item.label}
             aria-current={activeSection === item.id ? 'page' : undefined}
             className={`
-              relative px-4 py-2.5 rounded-full text-xs md:text-sm font-medium transition-all flex items-center gap-2 overflow-hidden
+              relative px-4 py-2.5 rounded-full text-xs md:text-sm font-medium whitespace-nowrap transition-all flex items-center gap-2 overflow-hidden
               focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70
               ${activeSection === item.id 
                 ? 'text-white' 

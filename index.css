@@ -8,3 +8,9 @@
   --color-glass-light: rgba(255, 255, 255, 0.05);
   --color-glass-border: rgba(255, 255, 255, 0.1);
 }
+
+/* The custom cursor replaces the native one, so only one pointer is ever visible. */
+html.custom-cursor,
+html.custom-cursor * {
+  cursor: none !important;
+}
