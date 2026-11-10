@@ -2,24 +2,43 @@ import React, { useEffect, useRef, useState } from 'react';
 import { HERO_MEDIA, HERO_SPLIT_QUERY } from '../constants';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
+import { attachHeroVideo, switchToFullClip } from '../utils/heroPlayer';
 
 interface HeroVideoProps {
   paused: boolean;
+  soundOn: boolean;
+  onSoundEnd: () => void;
 }
 
 const prefersSaveData = (): boolean =>
   typeof navigator !== 'undefined' &&
   Boolean((navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData);
 
-const HeroVideo: React.FC<HeroVideoProps> = ({ paused }) => {
+const HeroVideo: React.FC<HeroVideoProps> = ({ paused, soundOn, onSoundEnd }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const prefersReducedMotion = usePrefersReducedMotion();
   const isSplit = useMediaQuery(HERO_SPLIT_QUERY);
   const isSmallScreen = useMediaQuery('(max-width: 767px)');
   const [failed, setFailed] = useState(false);
 
-  const showStill = prefersReducedMotion || failed || prefersSaveData();
+  // Asking for sound is an explicit request to play, so it overrides the still.
+  const showStill = failed || ((prefersReducedMotion || prefersSaveData()) && !soundOn);
   const src = isSmallScreen ? HERO_MEDIA.mp4Mobile : HERO_MEDIA.mp4;
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.dataset.clip = isSmallScreen ? 'mobile' : 'full';
+    return attachHeroVideo(video);
+  }, [showStill, isSmallScreen]);
+
+  // The restart with sound happens in the click (see utils/heroPlayer).
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (soundOn) switchToFullClip(video);
+    video.muted = !soundOn;
+  }, [soundOn, showStill, src]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -29,15 +48,18 @@ const HeroVideo: React.FC<HeroVideoProps> = ({ paused }) => {
       if (paused || document.hidden) {
         video.pause();
       } else {
-        // Autoplay can be refused (e.g. iOS low power mode); the poster stays visible.
-        video.play().catch(() => {});
+        // Autoplay can be refused (e.g. iOS low power mode); the poster stays
+        // visible. If it was refused because of the sound, fall back to muted.
+        video.play().catch(() => {
+          if (soundOn) onSoundEnd();
+        });
       }
     };
 
     sync();
     document.addEventListener('visibilitychange', sync);
     return () => document.removeEventListener('visibilitychange', sync);
-  }, [paused, showStill, src]);
+  }, [paused, showStill, src, soundOn, onSoundEnd]);
 
   // The source is portrait (9:16). On wide screens it sits in a column on the
   // right at its natural ratio instead of being upscaled and cropped.
@@ -55,13 +77,13 @@ const HeroVideo: React.FC<HeroVideoProps> = ({ paused }) => {
           <img src={HERO_MEDIA.still} alt="" className={mediaClass} />
         ) : (
           <video
-            key={src}
             ref={videoRef}
             src={src}
             poster={HERO_MEDIA.poster}
             autoPlay
             muted
-            loop
+            loop={!soundOn}
+            onEnded={onSoundEnd}
             playsInline
             preload="metadata"
             tabIndex={-1}

@@ -7,14 +7,8 @@ export const TRANSLATIONS = {
       role: "Full Stack Creative Engineer",
       description: "I build fast, polished web products and integrate generative AI into them. Open to freelance projects and full-time roles.",
       cta: {
-        projects: "View projects",
-        ai: "Ask the AI",
-        contact: "Contact",
-        presentation: "Watch presentation"
-      },
-      presentation: {
-        title: "Presentation video",
-        close: "Close video"
+        sound: "Listen",
+        mute: "Mute"
       }
     },
     projects: {
@@ -109,14 +103,8 @@ export const TRANSLATIONS = {
       role: "Ingeniero Creativo Full Stack",
       description: "Construyo productos web rápidos y cuidados, e integro IA generativa en ellos. Disponible para proyectos freelance y puestos a tiempo completo.",
       cta: {
-        projects: "Ver proyectos",
-        ai: "Hablar con la IA",
-        contact: "Contacto",
-        presentation: "Ver presentación"
-      },
-      presentation: {
-        title: "Video de presentación",
-        close: "Cerrar video"
+        sound: "Escuchar",
+        mute: "Silenciar"
       }
     },
     projects: {
@@ -211,14 +199,8 @@ export const TRANSLATIONS = {
       role: "全栈创意工程师",
       description: "我打造快速、精致的 Web 产品，并将生成式 AI 融入其中。目前接受自由职业项目和全职机会。",
       cta: {
-        projects: "查看项目",
-        ai: "与 AI 对话",
-        contact: "联系我",
-        presentation: "观看介绍视频"
-      },
-      presentation: {
-        title: "介绍视频",
-        close: "关闭视频"
+        sound: "播放声音",
+        mute: "静音"
       }
     },
     projects: {

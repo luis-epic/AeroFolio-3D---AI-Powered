@@ -15,14 +15,17 @@ import {
 import { HERO_MEDIA } from '../constants';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
+import { attachHeroVideo, switchToFullClip } from '../utils/heroPlayer';
 
 interface HoloVideoProps {
   paused: boolean;
+  soundOn: boolean;
+  onSoundEnd: () => void;
 }
 
 // The clip is portrait (9:16); the plane keeps that ratio so the whole frame,
 // and with it the whole figure, is always visible.
-const PLANE_HEIGHT = 3.3;
+const PLANE_HEIGHT = 5.6;
 const PLANE_WIDTH = (PLANE_HEIGHT * 9) / 16;
 const HOLO_COLOR = '#00ffff';
 
@@ -63,15 +66,16 @@ const loadImageTexture = (url: string): Texture => {
   return texture;
 };
 
-const HoloVideo: React.FC<HoloVideoProps> = ({ paused }) => {
+const HoloVideo: React.FC<HoloVideoProps> = ({ paused, soundOn, onSoundEnd }) => {
   const ringRef = useRef<Mesh>(null);
   const prefersReducedMotion = usePrefersReducedMotion();
   const isSmallScreen = useMediaQuery('(max-width: 767px)');
   const [videoTexture, setVideoTexture] = useState<VideoTexture | null>(null);
   const [video, setVideo] = useState<HTMLVideoElement | null>(null);
 
-  const showStill = prefersReducedMotion || prefersSaveData();
-  const src = isSmallScreen ? HERO_MEDIA.mp4Mobile : HERO_MEDIA.mp4;
+  // Asking for sound is an explicit request to play, so it overrides the still.
+  const showStill = (prefersReducedMotion || prefersSaveData()) && !soundOn;
+  const useMobileClip = isSmallScreen;
 
   // Shown until the first video frame decodes, and permanently for visitors who
   // asked for reduced motion or data saving.
@@ -100,7 +104,8 @@ const HoloVideo: React.FC<HoloVideoProps> = ({ paused }) => {
     if (showStill) return;
 
     const element = document.createElement('video');
-    element.src = src;
+    element.dataset.clip = useMobileClip ? 'mobile' : 'full';
+    element.src = useMobileClip ? HERO_MEDIA.mp4Mobile : HERO_MEDIA.mp4;
     element.crossOrigin = 'anonymous';
     element.muted = true;
     element.loop = true;
@@ -115,8 +120,10 @@ const HoloVideo: React.FC<HoloVideoProps> = ({ paused }) => {
     };
     element.addEventListener('loadeddata', onReady, { once: true });
     setVideo(element);
+    const detach = attachHeroVideo(element);
 
     return () => {
+      detach();
       element.removeEventListener('loadeddata', onReady);
       element.pause();
       element.removeAttribute('src');
@@ -125,7 +132,20 @@ const HoloVideo: React.FC<HoloVideoProps> = ({ paused }) => {
       setVideoTexture(null);
       setVideo(null);
     };
-  }, [showStill, src]);
+  }, [showStill, useMobileClip]);
+
+  // With sound the presentation plays once, then drops back to the silent
+  // loop. The restart itself happens in the click (see utils/heroPlayer).
+  useEffect(() => {
+    if (!video) return;
+    if (soundOn) switchToFullClip(video);
+    video.muted = !soundOn;
+    video.loop = !soundOn;
+    if (!soundOn) return;
+
+    video.addEventListener('ended', onSoundEnd);
+    return () => video.removeEventListener('ended', onSoundEnd);
+  }, [video, soundOn, onSoundEnd]);
 
   useEffect(() => {
     if (!video) return;
@@ -134,15 +154,18 @@ const HoloVideo: React.FC<HoloVideoProps> = ({ paused }) => {
       if (paused || document.hidden) {
         video.pause();
       } else {
-        // Autoplay can be refused (e.g. iOS low power mode); the poster stays visible.
-        video.play().catch(() => {});
+        // Autoplay can be refused (e.g. iOS low power mode); the poster stays
+        // visible. If it was refused because of the sound, fall back to muted.
+        video.play().catch(() => {
+          if (soundOn) onSoundEnd();
+        });
       }
     };
 
     sync();
     document.addEventListener('visibilitychange', sync);
     return () => document.removeEventListener('visibilitychange', sync);
-  }, [video, paused]);
+  }, [video, paused, soundOn, onSoundEnd]);
 
   useFrame((state) => {
     if (ringRef.current && !prefersReducedMotion) {
@@ -153,7 +176,7 @@ const HoloVideo: React.FC<HoloVideoProps> = ({ paused }) => {
   const map = videoTexture ?? imageTexture;
 
   return (
-    <group position={[0, -0.5, -4.5]}>
+    <group position={[0, -0.5, -3]}>
       <mesh position={[0, 0.04, 0]} geometry={baseGeo}>
         <meshStandardMaterial color="#0f172a" metalness={0.9} roughness={0.2} />
       </mesh>
@@ -161,9 +184,8 @@ const HoloVideo: React.FC<HoloVideoProps> = ({ paused }) => {
         <meshBasicMaterial color={HOLO_COLOR} transparent opacity={0.5} blending={AdditiveBlending} toneMapped={false} />
       </mesh>
 
-      {/* Tilted back slightly so it faces the raised home camera. */}
       {map && (
-        <mesh position={[0, PLANE_HEIGHT / 2 + 0.1, 0]} rotation={[-0.2, 0, 0]}>
+        <mesh position={[0, PLANE_HEIGHT / 2 + 0.1, 0]}>
           <planeGeometry args={[PLANE_WIDTH, PLANE_HEIGHT]} />
           <meshBasicMaterial
             key={map.uuid}

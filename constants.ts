@@ -2,8 +2,10 @@ import { Section, CameraTarget, ProjectData } from './types';
 
 export const CAMERA_POSITIONS: Record<Section, CameraTarget> = {
   home: {
-    position: [0, 4, 8],
-    target: [0, 0, 0],
+    // A low camera aimed above the desk pushes the desk into the lower third
+    // and leaves the rest of the frame to the hologram behind it.
+    position: [0, 3, 9],
+    target: [0, 1.8, 0],
   },
   about: {
     position: [-2, 1.5, 3], // Focus on "Brain" (Left side)

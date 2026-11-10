@@ -18,10 +18,18 @@ const Navigation: React.FC<NavigationProps> = ({ activeSection, onNavigate, labe
     { id: 'contact', label: labels.contact, Icon: Smartphone },
   ];
 
+  // On the home view the 3D objects are the navigation, so the bar would only
+  // repeat them. It stays in the tab order there and appears on keyboard focus,
+  // because the 3D objects cannot be reached without a pointer.
+  const onHome = activeSection === 'home';
+
   return (
     <nav
       aria-label="Main"
-      className="absolute bottom-10 left-1/2 transform -translate-x-1/2 z-50 flex gap-4 pointer-events-auto"
+      className={`absolute bottom-10 left-1/2 transform -translate-x-1/2 z-50 flex gap-4 transition-opacity duration-500
+        ${onHome
+          ? 'opacity-0 pointer-events-none focus-within:opacity-100 focus-within:pointer-events-auto'
+          : 'opacity-100 pointer-events-auto'}`}
     >
       <div className="bg-glass-dark backdrop-blur-2xl border border-glass-border rounded-full p-2 flex gap-1 md:gap-2 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
         {navItems.map((item) => (

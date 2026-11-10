@@ -18,7 +18,8 @@ interface OverlayProps {
   activeSection: Section;
   onClose: () => void;
   setActiveSection: (section: Section) => void;
-  onOpenPresentation: () => void;
+  soundOn: boolean;
+  onToggleSound: () => void;
 }
 
 // --- CUSTOM CURSOR COMPONENT (TACTICAL PRECISION) ---
@@ -150,7 +151,7 @@ const RecruiterHUD: React.FC<{
   />
 );
 
-const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSection, onOpenPresentation }) => {
+const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSection, soundOn, onToggleSound }) => {
   const [visible, setVisible] = useState(false);
   const { t, language, setLanguage } = useLanguage();
   
@@ -340,8 +341,8 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
       <Hero
         hidden={activeSection !== 'home'}
         copy={t.home}
-        onNavigate={handleNav}
-        onOpenPresentation={onOpenPresentation}
+        soundOn={soundOn}
+        onToggleSound={onToggleSound}
       />
       <LanguageToggle language={language} toggleLanguage={toggleLanguage} />
       <RecruiterHUD activeSection={activeSection} onNavigate={handleNav} labels={t.labels} />

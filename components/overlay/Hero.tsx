@@ -1,38 +1,29 @@
 import React from 'react';
-import { Play } from 'lucide-react';
-import { Section } from '../../types';
+import { Volume2, VolumeX } from 'lucide-react';
 import { HERO_MEDIA } from '../../constants';
-import { playHoverSound, playClickSound } from '../../utils/soundEngine';
+import { playHoverSound } from '../../utils/soundEngine';
 import ScrambleText from './ScrambleText';
 
 export interface HeroCopy {
   role: string;
   description: string;
   cta: {
-    projects: string;
-    ai: string;
-    contact: string;
-    presentation: string;
+    sound: string;
+    mute: string;
   };
 }
 
 interface HeroProps {
   hidden: boolean;
   copy: HeroCopy;
-  onNavigate: (section: Section) => void;
-  onOpenPresentation: () => void;
+  soundOn: boolean;
+  onToggleSound: () => void;
 }
 
-const BUTTON_BASE =
-  'pointer-events-auto inline-flex items-center gap-2 rounded-full px-5 py-2.5 font-mono text-xs uppercase tracking-widest transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70';
-const BUTTON_PRIMARY = `${BUTTON_BASE} bg-cyan-400 text-black font-bold hover:bg-cyan-300`;
-const BUTTON_SECONDARY = `${BUTTON_BASE} border border-white/20 bg-black/40 text-white backdrop-blur-md hover:bg-white/15`;
-
-const Hero: React.FC<HeroProps> = ({ hidden, copy, onNavigate, onOpenPresentation }) => {
-  const go = (section: Section) => {
-    playClickSound();
-    onNavigate(section);
-  };
+// Navigation lives in the 3D objects and the bottom bar, so the hero only
+// carries the one action they do not offer: hearing the presentation.
+const Hero: React.FC<HeroProps> = ({ hidden, copy, soundOn, onToggleSound }) => {
+  const SoundIcon = soundOn ? VolumeX : Volume2;
 
   return (
     <div
@@ -51,28 +42,22 @@ const Hero: React.FC<HeroProps> = ({ hidden, copy, onNavigate, onOpenPresentatio
           {copy.description}
         </p>
 
-        <div className="mt-6 flex flex-wrap gap-2 md:gap-3">
-          <button type="button" onClick={() => go('projects')} onMouseEnter={playHoverSound} className={BUTTON_PRIMARY}>
-            {copy.cta.projects}
+        {HERO_MEDIA.hasAudio && (
+          <button
+            type="button"
+            onClick={onToggleSound}
+            onMouseEnter={playHoverSound}
+            aria-pressed={soundOn}
+            data-sound-toggle
+            className={`pointer-events-auto mt-4 inline-flex items-center gap-1.5 rounded-full border bg-black/40 px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider backdrop-blur-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70
+              ${soundOn
+                ? 'border-white/20 text-gray-200 hover:bg-white/15'
+                : 'border-cyan-400/60 text-cyan-300 hover:bg-cyan-400/15'}`}
+          >
+            <SoundIcon aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
+            {soundOn ? copy.cta.mute : copy.cta.sound}
           </button>
-          <button type="button" onClick={() => go('about')} onMouseEnter={playHoverSound} className={BUTTON_SECONDARY}>
-            {copy.cta.ai}
-          </button>
-          <button type="button" onClick={() => go('contact')} onMouseEnter={playHoverSound} className={BUTTON_SECONDARY}>
-            {copy.cta.contact}
-          </button>
-          {HERO_MEDIA.hasAudio && (
-            <button
-              type="button"
-              onClick={() => { playClickSound(); onOpenPresentation(); }}
-              onMouseEnter={playHoverSound}
-              className={`${BUTTON_SECONDARY} border-pink-400/50 text-pink-200`}
-            >
-              <Play aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
-              {copy.cta.presentation}
-            </button>
-          )}
-        </div>
+        )}
       </div>
     </div>
   );
