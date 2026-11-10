@@ -7,6 +7,7 @@ import { EffectComposer, Bloom, Vignette, Glitch } from '@react-three/postproces
 import CameraControlsImpl from 'camera-controls';
 import { Laptop, Brain, Smartphone, TechOrbit, ResumePaper, CoffeeMug } from './SceneElements';
 import HoloVideo from './HoloVideo';
+import Reveal from './Reveal';
 import { CAMERA_POSITIONS } from '../constants';
 import { Section } from '../types';
 
@@ -22,6 +23,7 @@ interface ExperienceProps {
   videoPaused: boolean;
   soundOn: boolean;
   onSoundEnd: () => void;
+  onVideoEnded: () => void;
 }
 
 // Define Glitch parameters using Vector2 to satisfy TypeScript requirements
@@ -68,7 +70,7 @@ const getCameraConfig = (section: Section, isMobile: boolean) => {
   };
 };
 
-const Experience: React.FC<ExperienceProps> = ({ activeSection, setActiveSection, labels, videoPaused, soundOn, onSoundEnd }) => {
+const Experience: React.FC<ExperienceProps> = ({ activeSection, setActiveSection, labels, videoPaused, soundOn, onSoundEnd, onVideoEnded }) => {
   const controlsRef = useRef<CameraControls>(null);
   // IMPORTANT: use `size` (canvas pixels), NOT `viewport` (three.js world units).
   // `viewport.width` scales with camera distance, so deriving `isMobile` from it
@@ -248,7 +250,7 @@ const Experience: React.FC<ExperienceProps> = ({ activeSection, setActiveSection
       </group>
       
       {/* Background hologram: the presentation video, shown full frame */}
-      <HoloVideo paused={videoPaused} soundOn={soundOn} onSoundEnd={onSoundEnd} />
+      <HoloVideo paused={videoPaused} soundOn={soundOn} onSoundEnd={onSoundEnd} onEnded={onVideoEnded} />
 
       {/* Interactive Elements */}
       <TechOrbit 
@@ -256,29 +258,40 @@ const Experience: React.FC<ExperienceProps> = ({ activeSection, setActiveSection
         hovered={isLaptopHovered} 
       />
 
-      <Laptop 
-        active={activeSection === 'projects'} 
-        onClick={() => setActiveSection('projects')}
-        label={labels.projects}
-        onHoverChange={setIsLaptopHovered}
-      />
+      {/* The desk objects pop in one after another, centre first. */}
+      <Reveal delay={0.5} origin={[0, 0.1, 0]}>
+        <Laptop 
+          active={activeSection === 'projects'} 
+          onClick={() => setActiveSection('projects')}
+          label={labels.projects}
+          onHoverChange={setIsLaptopHovered}
+        />
+      </Reveal>
 
-      <Brain 
-        active={activeSection === 'about'} 
-        onClick={() => setActiveSection('about')} 
-        label={labels.about}
-        visible={activeSection === 'home' || activeSection === 'about'} 
-      />
+      <Reveal delay={0.75} origin={[-2.5, 0.55, 0.5]}>
+        <Brain 
+          active={activeSection === 'about'} 
+          onClick={() => setActiveSection('about')} 
+          label={labels.about}
+          visible={activeSection === 'home' || activeSection === 'about'} 
+        />
+      </Reveal>
 
-      <Smartphone 
-        active={activeSection === 'contact'} 
-        onClick={() => setActiveSection('contact')} 
-        label={labels.contact}
-        visible={activeSection === 'home' || activeSection === 'contact'} 
-      />
+      <Reveal delay={0.9} origin={[2.5, 0.5, 0.5]}>
+        <Smartphone 
+          active={activeSection === 'contact'} 
+          onClick={() => setActiveSection('contact')} 
+          label={labels.contact}
+          visible={activeSection === 'home' || activeSection === 'contact'} 
+        />
+      </Reveal>
 
-      <ResumePaper />
-      <CoffeeMug />
+      <Reveal delay={1.1} origin={[-1.1, 0.4, 1.2]}>
+        <CoffeeMug />
+      </Reveal>
+      <Reveal delay={1.2} origin={[1.1, 0.4, 1.2]}>
+        <ResumePaper />
+      </Reveal>
     </>
   );
 };

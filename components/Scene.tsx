@@ -12,6 +12,7 @@ interface SceneProps {
   videoPaused: boolean;
   soundOn: boolean;
   onSoundEnd: () => void;
+  onVideoEnded: () => void;
 }
 
 /**
@@ -20,7 +21,7 @@ interface SceneProps {
  * Keeping the Canvas out of the entry chunk lets the DOM shell (hero copy and
  * navigation) paint before the Three.js stack is downloaded and parsed.
  */
-const Scene: React.FC<SceneProps> = ({ activeSection, setActiveSection, labels, videoPaused, soundOn, onSoundEnd }) => {
+const Scene: React.FC<SceneProps> = ({ activeSection, setActiveSection, labels, videoPaused, soundOn, onSoundEnd, onVideoEnded }) => {
   const [dpr, setDpr] = useState(1.5);
 
   return (
@@ -45,6 +46,7 @@ const Scene: React.FC<SceneProps> = ({ activeSection, setActiveSection, labels, 
           videoPaused={videoPaused}
           soundOn={soundOn}
           onSoundEnd={onSoundEnd}
+          onVideoEnded={onVideoEnded}
         />
       </Suspense>
     </Canvas>

@@ -35,6 +35,15 @@ export const ResumePaper: React.FC = () => {
   const topGeo = useMemo(() => new BoxGeometry(0.6, 0.01, 0.85), []);
   const planeGeo = useMemo(() => new PlaneGeometry(0.45, 0.5), []);
   const iconGeo = useMemo(() => new PlaneGeometry(0.12, 0.12), []);
+  const liftRef = useRef<Group>(null);
+
+  // Hovering lifts the sheet and tips it toward the viewer.
+  useFrame(() => {
+    const group = liftRef.current;
+    if (!group) return;
+    group.position.y += ((hovered ? 0.18 : 0) - group.position.y) * 0.12;
+    group.rotation.x += ((hovered ? 0.7 : 0) - group.rotation.x) * 0.12;
+  });
 
   const handleClick = (e: any) => {
     e.stopPropagation();
@@ -50,6 +59,7 @@ export const ResumePaper: React.FC = () => {
     >
       <Float speed={1.5} rotationIntensity={0.2} floatIntensity={0.4}>
         <group 
+          ref={liftRef}
           onClick={handleClick}
           onPointerOver={() => { setHover(true); playHoverSound(); }}
           onPointerOut={() => setHover(false)}
@@ -91,6 +101,16 @@ export const CoffeeMug: React.FC = () => {
   const mugGeo = useMemo(() => new CylinderGeometry(0.14, 0.12, 0.35, 16), []);
   const coffeeGeo = useMemo(() => new CircleGeometry(0.12, 16), []);
   const handleGeo = useMemo(() => new TorusGeometry(0.09, 0.025, 6, 12, Math.PI), []);
+  const mugRef = useRef<Group>(null);
+  const spinTarget = useRef(0);
+
+  // Hovering lifts the mug; a click spins it once.
+  useFrame(() => {
+    const group = mugRef.current;
+    if (!group) return;
+    group.position.y += ((hovered ? 0.12 : 0) - group.position.y) * 0.12;
+    group.rotation.y += (spinTarget.current - group.rotation.y) * 0.08;
+  });
 
   return (
     <group 
@@ -99,7 +119,8 @@ export const CoffeeMug: React.FC = () => {
     >
        <Float speed={2} rotationIntensity={0.5} floatIntensity={0.4}>
         <group
-          onClick={(e) => { e.stopPropagation(); playClickSound(); }}
+          ref={mugRef}
+          onClick={(e) => { e.stopPropagation(); playClickSound(); spinTarget.current += Math.PI * 2; }}
           onPointerOver={() => { setHover(true); playHoverSound(); }}
           onPointerOut={() => setHover(false)}
         >
@@ -198,6 +219,14 @@ export const TechOrbit: React.FC<TechOrbitProps> = ({ active, hovered }) => {
   );
 };
 
+// All three section labels share one height and depth, so they sit on a
+// single line from the home camera.
+const LABEL_Y = 1.75;
+const LABEL_Z = 0.5;
+const LID_CLOSED = Math.PI / 2 - 0.05;
+const BRAIN_Y = 0.55;
+const PHONE_Y = 0.5;
+
 interface LaptopProps {
   onClick: () => void;
   active: boolean;
@@ -263,6 +292,7 @@ export const Laptop: React.FC<LaptopProps> = ({ onClick, active, label, onHoverC
   const groupRef = useRef<Group>(null);
   const screenRef = useRef<Group>(null);
   const [hovered, setHover] = useState(false);
+  const scaleTarget = useMemo(() => new Vector3(), []);
   
   // Memoize geometries for performance
   const chassisGeo = useMemo(() => new BoxGeometry(1.5, 0.06, 1), []);
@@ -272,6 +302,8 @@ export const Laptop: React.FC<LaptopProps> = ({ onClick, active, label, onHoverC
   const keyboardAreaGeo = useMemo(() => new PlaneGeometry(1.3, 0.45), []);
   
   useHoverDispatcher(hovered);
+
+  const targetRotation = active ? -0.25 : (hovered ? -0.30 : -0.45);
 
   const handlePointerOver = () => {
     setHover(true);
@@ -288,13 +320,19 @@ export const Laptop: React.FC<LaptopProps> = ({ onClick, active, label, onHoverC
     if (groupRef.current) {
       const t = state.clock.getElapsedTime();
       groupRef.current.position.y = 0.1 + Math.sin(t * 0.5) * 0.005;
+      const scale = hovered && !active ? 1.06 : 1;
+      groupRef.current.scale.lerp(scaleTarget.set(scale, scale, scale), 0.12);
+    }
+    // The lid starts closed and eases to its angle, so it opens on load and
+    // moves smoothly on hover instead of snapping.
+    if (screenRef.current) {
+      screenRef.current.rotation.x += (targetRotation - screenRef.current.rotation.x) * 0.06;
     }
   });
 
   const chassisColor = "#1e293b"; 
   const keyColor = "#0f172a"; 
   const glowColor = active ? "#3b82f6" : "#60a5fa";
-  const targetRotation = active ? -0.25 : (hovered ? -0.30 : -0.45);
 
   return (
     <group ref={groupRef} onClick={(e) => { e.stopPropagation(); onClick(); playClickSound(); }} onPointerOver={handlePointerOver} onPointerOut={handlePointerOut}>
@@ -322,7 +360,7 @@ export const Laptop: React.FC<LaptopProps> = ({ onClick, active, label, onHoverC
          <cylinderGeometry args={[0.025, 0.025, 1.2, 16]} />
          <meshStandardMaterial color="#0f172a" metalness={0.9} roughness={0.2} />
       </mesh>
-      <group ref={screenRef} position={[0, 0.04, -0.48]} rotation={[targetRotation, 0, 0]}> 
+      <group ref={screenRef} position={[0, 0.04, -0.48]} rotation={[LID_CLOSED, 0, 0]}> 
         <mesh position={[0, 0.5, 0]} geometry={screenGeo}>
           <meshStandardMaterial color={chassisColor} roughness={0.4} metalness={0.8} />
         </mesh>
@@ -341,11 +379,9 @@ export const Laptop: React.FC<LaptopProps> = ({ onClick, active, label, onHoverC
         <mesh position={[0, 0.96, 0.024]}><boxGeometry args={[0.12, 0.02, 0.005]} /><meshBasicMaterial color="#0f172a" /></mesh>
         <mesh position={[0, 0.96, 0.025]}><circleGeometry args={[0.004, 16]} /><meshBasicMaterial color="#10b981" toneMapped={false} opacity={1} transparent /></mesh>
       </group>
-      <Float speed={2} rotationIntensity={0} floatIntensity={0.5}>
-        <Text position={[0, 1.6, -0.5]} fontSize={0.15} color="white" anchorX="center" anchorY="middle" outlineWidth={0.01} outlineColor="#000" visible={!active}>
-          {label}
-        </Text>
-      </Float>
+      <Text position={[0, LABEL_Y - 0.1, LABEL_Z]} fontSize={0.15} color="white" anchorX="center" anchorY="middle" outlineWidth={0.01} outlineColor="#000" visible={!active}>
+        {label}
+      </Text>
     </group>
   );
 };
@@ -377,13 +413,13 @@ export const Brain: React.FC<BrainProps> = ({ onClick, active, label, visible = 
       innerRef.current.rotation.y = -t * 0.5;
     }
     if (groupRef.current) {
-      const targetScale = visible ? 1 : 0;
+      const targetScale = visible ? (hovered && !active ? 1.12 : 1) : 0;
       groupRef.current.scale.lerp(vec.set(targetScale, targetScale, targetScale), 0.1);
     }
   });
 
   return (
-    <group ref={groupRef} position={[-2.5, 0.8, 0.5]} onClick={(e) => { e.stopPropagation(); onClick(); playClickSound(); }} onPointerOver={() => { setHover(true); playHoverSound(); }} onPointerOut={() => setHover(false)}>
+    <group ref={groupRef} position={[-2.5, BRAIN_Y, 0.5]} onClick={(e) => { e.stopPropagation(); onClick(); playClickSound(); }} onPointerOver={() => { setHover(true); playHoverSound(); }} onPointerOut={() => setHover(false)}>
       <Float speed={2} rotationIntensity={0.5} floatIntensity={0.5}>
         <mesh ref={meshRef}>
           <icosahedronGeometry args={[0.7, 0]} />
@@ -410,7 +446,7 @@ export const Brain: React.FC<BrainProps> = ({ onClick, active, label, visible = 
           <meshBasicMaterial color={hovered ? "#f472b6" : "#4b5563"} transparent opacity={0.3} />
         </mesh>
       </Float>
-       <Text position={[0, 1.2, 0]} fontSize={0.15} color="white" anchorX="center" anchorY="middle" outlineWidth={0.01} outlineColor="#000">
+       <Text position={[0, LABEL_Y - BRAIN_Y, 0]} fontSize={0.15} color="white" anchorX="center" anchorY="middle" outlineWidth={0.01} outlineColor="#000">
           {label}
         </Text>
     </group>
@@ -425,6 +461,7 @@ interface SmartphoneProps {
 }
 
 export const Smartphone: React.FC<SmartphoneProps> = ({ onClick, active, label, visible = true }) => {
+  const rootRef = useRef<Group>(null);
   const groupRef = useRef<Group>(null);
   const [hovered, setHover] = useState(false);
   const vec = new Vector3();
@@ -433,17 +470,19 @@ export const Smartphone: React.FC<SmartphoneProps> = ({ onClick, active, label, 
   useFrame((state) => {
     if (groupRef.current) {
       const t = state.clock.getElapsedTime();
-      groupRef.current.position.y = 0.5 + Math.sin(t * 0.6) * 0.08;
+      groupRef.current.position.y = Math.sin(t * 0.6) * 0.08;
       groupRef.current.rotation.y = -0.2 + Math.sin(t * 0.3) * 0.15;
       if (hovered) {
         groupRef.current.rotation.z = Math.sin(t * 20) * 0.005;
-        groupRef.current.position.x = 2.5 + Math.sin(t * 30) * 0.002;
+        groupRef.current.position.x = Math.sin(t * 30) * 0.002;
       } else {
         groupRef.current.rotation.z = 0;
-        groupRef.current.position.x = 2.5;
+        groupRef.current.position.x = 0;
       }
-      const targetScale = visible ? 1 : 0;
-      groupRef.current.scale.lerp(vec.set(targetScale, targetScale, targetScale), 0.1);
+    }
+    if (rootRef.current) {
+      const targetScale = visible ? (hovered && !active ? 1.1 : 1) : 0;
+      rootRef.current.scale.lerp(vec.set(targetScale, targetScale, targetScale), 0.1);
     }
   });
 
@@ -451,7 +490,9 @@ export const Smartphone: React.FC<SmartphoneProps> = ({ onClick, active, label, 
   const backColor = "#374151"; 
 
   return (
-    <group ref={groupRef} position={[2.5, 0.5, 0.5]} onClick={(e) => { e.stopPropagation(); onClick(); playClickSound(); }} onPointerOver={() => { setHover(true); playHoverSound(); }} onPointerOut={() => setHover(false)}>
+    // The label sits outside the bobbing group so it stays level with the others.
+    <group ref={rootRef} position={[2.5, PHONE_Y, 0.5]} onClick={(e) => { e.stopPropagation(); onClick(); playClickSound(); }} onPointerOver={() => { setHover(true); playHoverSound(); }} onPointerOut={() => setHover(false)}>
+      <group ref={groupRef}>
       <group>
         <RoundedBox args={[0.7, 1.45, 0.08]} radius={0.04} smoothness={4}><meshStandardMaterial color={frameColor} roughness={0.25} metalness={1.0} /></RoundedBox>
         <mesh position={[0, 0, 0.041]}><planeGeometry args={[0.66, 1.41]} /><meshPhysicalMaterial color="black" roughness={0.2} metalness={0.5} clearcoat={1} /></mesh>
@@ -476,11 +517,10 @@ export const Smartphone: React.FC<SmartphoneProps> = ({ onClick, active, label, 
          </group>
          <mesh position={[0, 0.1, 0.042]}><circleGeometry args={[0.06, 32]} /><meshStandardMaterial color="#555" roughness={0.3} metalness={0.8} /></mesh>
       </group>
-      <Float speed={2} rotationIntensity={0} floatIntensity={0.5}>
-        <Text position={[0, 1.1, 0]} fontSize={0.15} color="white" anchorX="center" anchorY="middle" outlineWidth={0.01} outlineColor="#000">
-            {label}
-        </Text>
-      </Float>
+      </group>
+      <Text position={[0, LABEL_Y - PHONE_Y, 0]} fontSize={0.15} color="white" anchorX="center" anchorY="middle" outlineWidth={0.01} outlineColor="#000">
+        {label}
+      </Text>
     </group>
   );
 };

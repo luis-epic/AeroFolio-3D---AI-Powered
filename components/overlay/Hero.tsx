@@ -1,5 +1,5 @@
 import React from 'react';
-import { Volume2, VolumeX } from 'lucide-react';
+import { RotateCcw, Volume2, VolumeX } from 'lucide-react';
 import { HERO_MEDIA } from '../../constants';
 import { playHoverSound } from '../../utils/soundEngine';
 import ScrambleText from './ScrambleText';
@@ -10,6 +10,7 @@ export interface HeroCopy {
   cta: {
     sound: string;
     mute: string;
+    replay: string;
   };
 }
 
@@ -17,17 +18,20 @@ interface HeroProps {
   hidden: boolean;
   copy: HeroCopy;
   soundOn: boolean;
+  heroEnded: boolean;
   onToggleSound: () => void;
 }
 
-// Navigation lives in the 3D objects and the bottom bar, so the hero only
-// carries the one action they do not offer: hearing the presentation.
-const Hero: React.FC<HeroProps> = ({ hidden, copy, soundOn, onToggleSound }) => {
-  const SoundIcon = soundOn ? VolumeX : Volume2;
+const ACTION_CLASS =
+  'pointer-events-auto inline-flex items-center gap-2 rounded-full border px-4 py-2 font-mono text-xs uppercase tracking-wider backdrop-blur-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70';
+
+const Hero: React.FC<HeroProps> = ({ hidden, copy, soundOn, heroEnded, onToggleSound }) => {
+  const SoundIcon = heroEnded ? RotateCcw : soundOn ? VolumeX : Volume2;
+  const soundLabel = heroEnded ? copy.cta.replay : soundOn ? copy.cta.mute : copy.cta.sound;
 
   return (
     <div
-      className={`absolute left-6 right-6 top-8 z-10 pointer-events-none transition-all duration-700 ease-out md:left-10 md:right-auto md:top-10
+      className={`absolute left-6 right-6 top-24 z-10 pointer-events-none transition-all duration-700 ease-out md:left-10 md:right-auto md:top-10
         ${hidden ? 'invisible opacity-0 -translate-y-5 blur-md' : 'visible opacity-100 blur-0'}`}
     >
       <div className="max-w-md">
@@ -43,20 +47,19 @@ const Hero: React.FC<HeroProps> = ({ hidden, copy, soundOn, onToggleSound }) => 
         </p>
 
         {HERO_MEDIA.hasAudio && (
-          <button
-            type="button"
-            onClick={onToggleSound}
-            onMouseEnter={playHoverSound}
-            aria-pressed={soundOn}
-            data-sound-toggle
-            className={`pointer-events-auto mt-4 inline-flex items-center gap-1.5 rounded-full border bg-black/40 px-3 py-1.5 font-mono text-[11px] uppercase tracking-wider backdrop-blur-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70
-              ${soundOn
-                ? 'border-white/20 text-gray-200 hover:bg-white/15'
-                : 'border-cyan-400/60 text-cyan-300 hover:bg-cyan-400/15'}`}
-          >
-            <SoundIcon aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
-            {soundOn ? copy.cta.mute : copy.cta.sound}
-          </button>
+          <div className="mt-5 flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={onToggleSound}
+              onMouseEnter={playHoverSound}
+              aria-pressed={heroEnded ? undefined : soundOn}
+              data-sound-toggle
+              className={`${ACTION_CLASS} border-white/25 bg-black/50 text-gray-100 hover:bg-white/15`}
+            >
+              <SoundIcon aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
+              {soundLabel}
+            </button>
+          </div>
         )}
       </div>
     </div>

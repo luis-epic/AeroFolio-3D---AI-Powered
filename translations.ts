@@ -8,7 +8,12 @@ export const TRANSLATIONS = {
       description: "I build fast, polished web products and integrate generative AI into them. Open to freelance projects and full-time roles.",
       cta: {
         sound: "Listen",
-        mute: "Mute"
+        mute: "Mute",
+        replay: "Replay",
+
+        next: "Next",
+        quickView: "Quick view",
+        fullView: "3D view"
       }
     },
     projects: {
@@ -104,7 +109,12 @@ export const TRANSLATIONS = {
       description: "Construyo productos web rápidos y cuidados, e integro IA generativa en ellos. Disponible para proyectos freelance y puestos a tiempo completo.",
       cta: {
         sound: "Escuchar",
-        mute: "Silenciar"
+        mute: "Silenciar",
+        replay: "Ver de nuevo",
+
+        next: "Siguiente",
+        quickView: "Versión rápida",
+        fullView: "Vista 3D"
       }
     },
     projects: {
@@ -200,7 +210,12 @@ export const TRANSLATIONS = {
       description: "我打造快速、精致的 Web 产品，并将生成式 AI 融入其中。目前接受自由职业项目和全职机会。",
       cta: {
         sound: "播放声音",
-        mute: "静音"
+        mute: "静音",
+        replay: "重新播放",
+
+        next: "下一步",
+        quickView: "快速版",
+        fullView: "3D 视图"
       }
     },
     projects: {

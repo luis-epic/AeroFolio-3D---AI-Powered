@@ -7,11 +7,12 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { Language } from '../translations';
 import { playHoverSound, playClickSound } from '../utils/soundEngine';
 import { fetchGitHubProfile, type GitHubProfile, type GitHubFailureReason } from '../services/githubService';
-import { Mic, Volume2, VolumeX } from 'lucide-react';
+import { Box, Mic, Volume2, VolumeX, Zap } from 'lucide-react';
 import Navigation from './overlay/Navigation';
 import StatsWidget from './overlay/StatsWidget';
 import Hero from './overlay/Hero';
 import ScrambleText from './overlay/ScrambleText';
+import ContactLinks from './overlay/ContactLinks';
 import { Projects } from './Projects';
 
 interface OverlayProps {
@@ -20,6 +21,9 @@ interface OverlayProps {
   setActiveSection: (section: Section) => void;
   soundOn: boolean;
   onToggleSound: () => void;
+  heroEnded: boolean;
+  liteMode: boolean;
+  onToggleLiteMode: () => void;
 }
 
 // --- CUSTOM CURSOR COMPONENT (TACTICAL PRECISION) ---
@@ -131,9 +135,30 @@ const LanguageToggle: React.FC<{ language: Language; toggleLanguage: () => void 
       onClick={() => { toggleLanguage(); playClickSound(); }}
       onMouseEnter={playHoverSound}
       aria-label={`Change language. Current language: ${getLanguageLabel()}`}
-      className="absolute top-8 right-8 z-50 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white px-3 py-1 rounded-full text-sm font-mono transition-all pointer-events-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+      className={TOP_BUTTON_CLASS}
     >
       {getLanguageLabel()}
+    </button>
+  );
+};
+
+const TOP_BUTTON_CLASS =
+  'inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white px-3 py-1 rounded-full text-sm font-mono transition-all pointer-events-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70';
+
+// Switches between the 3D scene and the plain, lighter page.
+const ViewToggle: React.FC<{ liteMode: boolean; onToggle: () => void; labels: { quickView: string; fullView: string } }> = ({ liteMode, onToggle, labels }) => {
+  const Icon = liteMode ? Box : Zap;
+  const label = liteMode ? labels.fullView : labels.quickView;
+  return (
+    <button
+      type="button"
+      onClick={() => { onToggle(); playClickSound(); }}
+      onMouseEnter={playHoverSound}
+      aria-label={label}
+      title={label}
+      className={`${TOP_BUTTON_CLASS} !px-2 !py-2`}
+    >
+      <Icon aria-hidden="true" className="h-4 w-4 shrink-0" />
     </button>
   );
 };
@@ -143,15 +168,19 @@ const RecruiterHUD: React.FC<{
   activeSection: Section; 
   onNavigate: (s: Section) => void;
   labels: Record<Section, string>;
-}> = ({ activeSection, onNavigate, labels }) => (
+  nextLabel: string;
+  alwaysVisible: boolean;
+}> = ({ activeSection, onNavigate, labels, nextLabel, alwaysVisible }) => (
   <Navigation
     activeSection={activeSection}
     onNavigate={onNavigate}
     labels={labels}
+    nextLabel={nextLabel}
+    alwaysVisible={alwaysVisible}
   />
 );
 
-const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSection, soundOn, onToggleSound }) => {
+const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSection, soundOn, onToggleSound, heroEnded, liteMode, onToggleLiteMode }) => {
   const [visible, setVisible] = useState(false);
   const { t, language, setLanguage } = useLanguage();
   
@@ -342,10 +371,20 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
         hidden={activeSection !== 'home'}
         copy={t.home}
         soundOn={soundOn}
+        heroEnded={heroEnded}
         onToggleSound={onToggleSound}
       />
-      <LanguageToggle language={language} toggleLanguage={toggleLanguage} />
-      <RecruiterHUD activeSection={activeSection} onNavigate={handleNav} labels={t.labels} />
+      <div className="absolute top-8 right-6 md:right-8 z-50 flex items-center gap-2">
+        <ViewToggle liteMode={liteMode} onToggle={onToggleLiteMode} labels={t.home.cta} />
+        <LanguageToggle language={language} toggleLanguage={toggleLanguage} />
+      </div>
+      <RecruiterHUD
+        activeSection={activeSection}
+        onNavigate={handleNav}
+        labels={t.labels}
+        nextLabel={t.home.cta.next}
+        alwaysVisible={liteMode}
+      />
 
       <div 
         className={`absolute inset-0 z-20 flex items-center justify-center transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${visible ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none filter blur-sm'}`}
@@ -642,7 +681,7 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
                   <p className="text-[10px] text-emerald-300/60 uppercase tracking-[0.2em] ml-5">{t.stats.signalOpen}</p>
                 </div>
 
-                <div className="flex-1 flex flex-col items-center justify-center p-8 relative">
+                <div className="flex-1 flex flex-col items-center justify-center overflow-y-auto p-6 md:p-8 relative">
                     {/* Background Decor */}
                     <div className="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none">
                        <div className="w-96 h-96 border border-emerald-500/30 rounded-full animate-spin-slow border-t-transparent"></div>
@@ -651,20 +690,18 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
 
                     {/* LIVE GITHUB STATS WIDGET */}
                     {githubData ? (
-                        <div className="mb-6 w-full max-w-sm grid grid-cols-3 gap-2">
-                           <div className="bg-emerald-900/20 border border-emerald-500/20 p-2 text-center rounded hover:bg-emerald-800/30 transition-colors">
-                               <div className="text-lg font-bold text-white font-mono">{githubData.public_repos}</div>
-                               <div className="text-[8px] md:text-[9px] text-emerald-400 uppercase tracking-widest">{t.stats.repos}</div>
-                           </div>
-                           <div className="bg-emerald-900/20 border border-emerald-500/20 p-2 text-center rounded hover:bg-emerald-800/30 transition-colors">
-                               <div className="text-lg font-bold text-white font-mono">{githubData.stars || 0}</div>
-                               <div className="text-[8px] md:text-[9px] text-emerald-400 uppercase tracking-widest">{t.stats.stars}</div>
-                           </div>
-                           <div className="bg-emerald-900/20 border border-emerald-500/20 p-2 text-center rounded hover:bg-emerald-800/30 transition-colors">
-                               <div className="text-lg font-bold text-white font-mono">{githubData.followers}</div>
-                               <div className="text-[8px] md:text-[9px] text-emerald-400 uppercase tracking-widest">{t.stats.followers}</div>
-                           </div>
-                        </div>
+                        <dl className="relative mb-6 w-full max-w-md grid grid-cols-3 gap-3">
+                           {[
+                             { label: t.stats.repos, value: githubData.public_repos },
+                             { label: t.stats.stars, value: githubData.stars || 0 },
+                             { label: t.stats.followers, value: githubData.followers },
+                           ].map((stat) => (
+                             <div key={stat.label} className="flex flex-col-reverse rounded-lg border border-emerald-400/40 bg-black/60 px-2 py-3 text-center">
+                               <dt className="mt-1 text-[11px] uppercase tracking-wider text-emerald-300">{stat.label}</dt>
+                               <dd className="text-2xl font-bold text-white font-mono">{stat.value}</dd>
+                             </div>
+                           ))}
+                        </dl>
                       ) : (
                       <StatsWidget
                         data={githubData}
@@ -673,55 +710,11 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
                       />
                       )}
 
-                    <p className="text-emerald-100 mb-6 max-w-md font-mono text-sm text-center bg-black/40 p-4 border-l-2 border-emerald-500">
+                    <p className="relative text-white mb-6 max-w-md font-sans text-base leading-relaxed text-center text-pretty">
                        {t.contact.description}
                     </p>
-                    
-                    <motion.div 
-                      initial="hidden"
-                      animate="visible"
-                      variants={{
-                        hidden: { opacity: 0 },
-                        visible: { opacity: 1, transition: { staggerChildren: 0.1, delayChildren: 0.2 } }
-                      }}
-                      className="space-y-4 w-full max-w-sm z-10"
-                    >
-                      
-                      <motion.a 
-                        variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}
-                        href="mailto:luismartinez.developer@gmail.com" onMouseEnter={playHoverSound} className="group relative w-full flex items-center justify-between p-4 bg-emerald-900/10 border border-emerald-500/30 hover:bg-emerald-500/10 hover:border-emerald-400 hover:shadow-[0_0_20px_rgba(16,185,129,0.2)] transition-all overflow-hidden rounded-sm">
-                        <div className="flex items-center gap-4">
-                           <span className="text-emerald-500 font-mono text-lg group-hover:animate-pulse">@</span>
-                           <span className="text-emerald-100 font-mono text-xs uppercase tracking-wider">Send Email</span>
-                        </div>
-                        <span className="text-xs text-emerald-600 font-mono opacity-50 group-hover:opacity-100 transition-opacity">SMTP://CONNECT</span>
-                        {/* Scanline Effect */}
-                        <div className="absolute top-0 bottom-0 w-1 bg-emerald-400 left-0 group-hover:h-full h-0 transition-all duration-300"></div>
-                      </motion.a>
 
-                      <motion.a 
-                        variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}
-                        href="https://www.linkedin.com/in/luisepico/" target="_blank" rel="noopener noreferrer" onMouseEnter={playHoverSound} className="group relative w-full flex items-center justify-between p-4 bg-blue-900/10 border border-blue-500/30 hover:bg-blue-500/10 hover:border-blue-400 hover:shadow-[0_0_20px_rgba(59,130,246,0.2)] transition-all overflow-hidden rounded-sm">
-                        <div className="flex items-center gap-4">
-                           <span className="text-blue-500 font-mono text-lg group-hover:animate-pulse">in</span>
-                           <span className="text-blue-100 font-mono text-xs uppercase tracking-wider">LinkedIn</span>
-                        </div>
-                        <span className="text-xs text-blue-600 font-mono opacity-50 group-hover:opacity-100 transition-opacity">LINK://PROFILE</span>
-                         <div className="absolute top-0 bottom-0 w-1 bg-blue-400 left-0 group-hover:h-full h-0 transition-all duration-300"></div>
-                      </motion.a>
-
-                      <motion.a 
-                        variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}
-                        href="https://github.com/luis-epic" target="_blank" rel="noopener noreferrer" onMouseEnter={playHoverSound} className="group relative w-full flex items-center justify-between p-4 bg-violet-900/10 border border-violet-500/30 hover:bg-violet-500/10 hover:border-violet-400 hover:shadow-[0_0_20px_rgba(167,139,250,0.2)] transition-all overflow-hidden rounded-sm">
-                        <div className="flex items-center gap-4">
-                           <span className="text-violet-500 font-mono text-lg group-hover:text-white group-hover:animate-pulse">git</span>
-                           <span className="text-violet-200 font-mono text-xs uppercase tracking-wider">GitHub</span>
-                        </div>
-                        <span className="text-xs text-violet-600 font-mono opacity-50 group-hover:opacity-100 transition-opacity">REPO://ACCESS</span>
-                        <div className="absolute top-0 bottom-0 w-1 bg-violet-400 left-0 group-hover:h-full h-0 transition-all duration-300"></div>
-                      </motion.a>
-
-                    </motion.div>
+                    <ContactLinks copy={t.contact} />
                 </div>
               </motion.div>
             )}

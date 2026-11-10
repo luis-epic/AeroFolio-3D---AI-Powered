@@ -8,13 +8,14 @@ interface HeroVideoProps {
   paused: boolean;
   soundOn: boolean;
   onSoundEnd: () => void;
+  onEnded: () => void;
 }
 
 const prefersSaveData = (): boolean =>
   typeof navigator !== 'undefined' &&
   Boolean((navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData);
 
-const HeroVideo: React.FC<HeroVideoProps> = ({ paused, soundOn, onSoundEnd }) => {
+const HeroVideo: React.FC<HeroVideoProps> = ({ paused, soundOn, onSoundEnd, onEnded }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const prefersReducedMotion = usePrefersReducedMotion();
   const isSplit = useMediaQuery(HERO_SPLIT_QUERY);
@@ -47,13 +48,16 @@ const HeroVideo: React.FC<HeroVideoProps> = ({ paused, soundOn, onSoundEnd }) =>
     const sync = () => {
       if (paused || document.hidden) {
         video.pause();
-      } else {
-        // Autoplay can be refused (e.g. iOS low power mode); the poster stays
-        // visible. If it was refused because of the sound, fall back to muted.
-        video.play().catch(() => {
-          if (soundOn) onSoundEnd();
-        });
+        return;
       }
+      // play() on a finished clip would start it over; only an explicit
+      // replay (utils/heroPlayer) does that.
+      if (video.ended) return;
+      // Autoplay can be refused (e.g. iOS low power mode); the poster stays
+      // visible. If it was refused because of the sound, fall back to muted.
+      video.play().catch(() => {
+        if (soundOn) onSoundEnd();
+      });
     };
 
     sync();
@@ -82,8 +86,7 @@ const HeroVideo: React.FC<HeroVideoProps> = ({ paused, soundOn, onSoundEnd }) =>
             poster={HERO_MEDIA.poster}
             autoPlay
             muted
-            loop={!soundOn}
-            onEnded={onSoundEnd}
+            onEnded={onEnded}
             playsInline
             preload="metadata"
             tabIndex={-1}
