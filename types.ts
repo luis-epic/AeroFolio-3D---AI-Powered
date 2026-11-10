@@ -1,5 +1,3 @@
-import { Vector3 } from 'three';
-
 export type Section = 'home' | 'about' | 'projects' | 'contact';
 
 export interface CameraTarget {

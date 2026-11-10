@@ -1,9 +1,11 @@
 
-import React, { useState, Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useCallback, useState } from 'react';
 import { Section } from './types';
 import Overlay from './components/Overlay';
-import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
+import HeroVideo from './components/HeroVideo';
+import PresentationModal from './components/PresentationModal';
 import ErrorBoundary from './components/ErrorBoundary';
+import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 
 // The 3D layer is code-split: the Three.js stack is large, and deferring it lets
 // the hero copy and navigation paint immediately instead of waiting on WebGL.
@@ -11,7 +13,7 @@ const Scene = lazy(() => import('./components/Scene'));
 
 const AppContent: React.FC = () => {
   const [activeSection, setActiveSection] = useState<Section>('home');
-  const [aiState, setAiState] = useState<'idle' | 'thinking'>('idle');
+  const [presentationOpen, setPresentationOpen] = useState(false);
 
   const { t } = useLanguage();
 
@@ -20,6 +22,10 @@ const AppContent: React.FC = () => {
       setActiveSection('home');
     });
   };
+
+  const openPresentation = useCallback(() => setPresentationOpen(true), []);
+  const closePresentation = useCallback(() => setPresentationOpen(false), []);
+  const videoPaused = activeSection !== 'home' || presentationOpen;
 
   return (
     <div className="relative w-full h-screen bg-[#050505]">
@@ -31,23 +37,29 @@ const AppContent: React.FC = () => {
         activeSection={activeSection} 
         onClose={handleCloseOverlay} 
         setActiveSection={setActiveSection}
-        setAiState={setAiState}
+        onOpenPresentation={openPresentation}
       />
 
       <div className="absolute inset-0 z-0">
-        {/* A WebGL crash must not take the whole portfolio down: the DOM overlay
-            stays usable if the 3D layer fails to initialise. */}
-        <ErrorBoundary>
+        {/* If WebGL fails, the plain video keeps the hero usable. */}
+        <ErrorBoundary fallback={<HeroVideo paused={videoPaused} />}>
           <Suspense fallback={null}>
             <Scene
               activeSection={activeSection}
               setActiveSection={setActiveSection}
               labels={t.labels}
-              aiState={aiState}
+              videoPaused={videoPaused}
             />
           </Suspense>
         </ErrorBoundary>
       </div>
+
+      <PresentationModal
+        open={presentationOpen}
+        onClose={closePresentation}
+        title={t.home.presentation.title}
+        closeLabel={t.home.presentation.close}
+      />
     </div>
   );
 };

@@ -5,7 +5,8 @@ import { Vector2 } from 'three';
 import { CameraControls, Environment, MeshReflectorMaterial, ContactShadows, CameraShake, BakeShadows, Preload, AdaptiveEvents } from '@react-three/drei';
 import { EffectComposer, Bloom, Vignette, Glitch } from '@react-three/postprocessing';
 import CameraControlsImpl from 'camera-controls';
-import { Laptop, Brain, Smartphone, TechOrbit, ResumePaper, CoffeeMug, HoloProjector } from './SceneElements';
+import { Laptop, Brain, Smartphone, TechOrbit, ResumePaper, CoffeeMug } from './SceneElements';
+import HoloVideo from './HoloVideo';
 import { CAMERA_POSITIONS } from '../constants';
 import { Section } from '../types';
 
@@ -18,7 +19,7 @@ interface ExperienceProps {
     about: string;
     contact: string;
   };
-  aiState: 'idle' | 'thinking'; // Received from App
+  videoPaused: boolean;
 }
 
 // Define Glitch parameters using Vector2 to satisfy TypeScript requirements
@@ -66,7 +67,7 @@ const getCameraConfig = (section: Section, isMobile: boolean) => {
   };
 };
 
-const Experience: React.FC<ExperienceProps> = ({ activeSection, setActiveSection, labels, aiState }) => {
+const Experience: React.FC<ExperienceProps> = ({ activeSection, setActiveSection, labels, videoPaused }) => {
   const controlsRef = useRef<CameraControls>(null);
   // IMPORTANT: use `size` (canvas pixels), NOT `viewport` (three.js world units).
   // `viewport.width` scales with camera distance, so deriving `isMobile` from it
@@ -257,8 +258,8 @@ const Experience: React.FC<ExperienceProps> = ({ activeSection, setActiveSection
         </mesh>
       </group>
       
-      {/* Background Hologram Projector - Now Reactive to AI State */}
-      <HoloProjector aiState={aiState} />
+      {/* Background hologram: the presentation video, shown full frame */}
+      <HoloVideo paused={videoPaused} />
 
       {/* Interactive Elements */}
       <TechOrbit 

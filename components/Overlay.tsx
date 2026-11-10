@@ -7,17 +7,18 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { Language } from '../translations';
 import { playHoverSound, playClickSound } from '../utils/soundEngine';
 import { fetchGitHubProfile, type GitHubProfile, type GitHubFailureReason } from '../services/githubService';
-import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
 import { Mic, Volume2, VolumeX } from 'lucide-react';
 import Navigation from './overlay/Navigation';
 import StatsWidget from './overlay/StatsWidget';
+import Hero from './overlay/Hero';
+import ScrambleText from './overlay/ScrambleText';
 import { Projects } from './Projects';
 
 interface OverlayProps {
   activeSection: Section;
   onClose: () => void;
   setActiveSection: (section: Section) => void;
-  setAiState: (state: 'idle' | 'thinking') => void;
+  onOpenPresentation: () => void;
 }
 
 // --- CUSTOM CURSOR COMPONENT (TACTICAL PRECISION) ---
@@ -116,75 +117,6 @@ const CustomCursor: React.FC = () => {
   );
 };
 
-// --- SCRAMBLE TEXT COMPONENT ---
-const SCRAMBLE_CHARS = "!<>-_\\/[]{}—=+*^?#________";
-const TICK_MS = 30;
-const MS_PER_LETTER = 45; // wall-clock time before one more letter is revealed
-const MAX_SCRAMBLE_MS = 2500; // hard cap so long strings still resolve quickly
-
-/**
- * Decodes `text` from random characters.
- *
- * Accessibility: the animated characters are decorative noise, so they are
- * hidden from assistive tech and the real text is exposed via a visually hidden
- * span. Without this a screen reader announces garbage like
- * "LUIS MART-?\^ FULL STAC=]_!/[". Honors `prefers-reduced-motion`.
- */
-const ScrambleText: React.FC<{ text: string; className?: string }> = ({ text, className }) => {
-  const prefersReducedMotion = usePrefersReducedMotion();
-  const [display, setDisplay] = useState(text);
-
-  useEffect(() => {
-    // Respect the motion preference: render the final text immediately.
-    if (prefersReducedMotion) {
-      setDisplay(text);
-      return;
-    }
-
-    // Progress is derived from elapsed wall-clock time, not from a tick counter.
-    // The 3D canvas can starve the main thread and throttle this interval, and a
-    // per-tick counter then crawled (~7 letters in 10s on a busy frame budget).
-    // Time-based progress always resolves within `duration` no matter how often
-    // the timer actually fires.
-    const startedAt = Date.now();
-    const duration = Math.min(text.length * MS_PER_LETTER, MAX_SCRAMBLE_MS);
-
-    const interval = setInterval(() => {
-      const progress = (Date.now() - startedAt) / duration;
-
-      if (progress >= 1) {
-        // Guarantee the exact final string, then stop.
-        setDisplay(text);
-        clearInterval(interval);
-        return;
-      }
-
-      const revealed = Math.floor(progress * text.length);
-
-      setDisplay(
-        text
-          .split("")
-          .map((letter, index) => {
-            if (index < revealed) return text[index];
-            // Preserve spaces so word shapes stay stable while decoding.
-            if (letter === " ") return " ";
-            return SCRAMBLE_CHARS[Math.floor(Math.random() * SCRAMBLE_CHARS.length)];
-          })
-          .join("")
-      );
-    }, TICK_MS);
-
-    return () => clearInterval(interval);
-  }, [text, prefersReducedMotion]);
-
-  return (
-    <span className={className}>
-      <span aria-hidden="true">{display}</span>
-      <span className="sr-only">{text}</span>
-    </span>
-  );
-};
-
 // Extracted component to prevent re-renders on parent state change
 const LanguageToggle: React.FC<{ language: Language; toggleLanguage: () => void }> = ({ language, toggleLanguage }) => {
   const getLanguageLabel = () => {
@@ -218,24 +150,7 @@ const RecruiterHUD: React.FC<{
   />
 );
 
-// Extracted Header Component to prevent flickering
-const Header: React.FC<{ visible: boolean; t: any }> = ({ visible, t }) => (
-  <div className={`absolute top-10 left-10 z-10 pointer-events-none transition-all duration-700 ease-out ${visible ? 'opacity-0 translate-y-[-20px] filter blur-md' : 'opacity-100 filter blur-0'}`}>
-    <h1 className="text-4xl md:text-6xl font-bold text-white tracking-tighter font-display uppercase drop-shadow-2xl">
-      <ScrambleText text="Luis Martinez" />
-      <span className="block text-cyan-400 text-lg md:text-xl mt-3 font-mono tracking-widest font-normal opacity-90 border-l-2 border-pink-500 pl-3">
-         <ScrambleText text={t.home.role} />
-      </span>
-    </h1>
-    {!visible && (
-      <p className="text-gray-400 mt-6 max-w-md text-sm md:text-base leading-relaxed font-sans opacity-80 mix-blend-screen">
-        {t.home.description}
-      </p>
-    )}
-  </div>
-);
-
-const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSection, setAiState }) => {
+const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSection, onOpenPresentation }) => {
   const [visible, setVisible] = useState(false);
   const { t, language, setLanguage } = useLanguage();
   
@@ -343,17 +258,13 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
     setChatHistory(prev => [...prev, userMsg]);
     setPrompt("");
     
-    // Set Loading States
     setIsTyping(true);
-    setAiState('thinking'); // Update global state for 3D reactivity
     
     const responseText = await generateAIResponse(text, language);
     
     setChatHistory(prev => [...prev, { role: 'model', text: responseText }]);
     
-    // Reset Loading States
     setIsTyping(false);
-    setAiState('idle');
     
     speakText(responseText);
   };
@@ -381,7 +292,6 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
     React.startTransition(() => {
       if (section === 'home') {
         onClose();
-        // Dispatch reset camera event to reset the 3D scene view smoothly
         window.dispatchEvent(new CustomEvent('reset-camera'));
       }
       else setActiveSection(section);
@@ -427,34 +337,14 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
       {/* Background Dimmer (Focus Visual) */}
       <div className={`absolute inset-0 bg-black/60 backdrop-blur-[2px] z-10 transition-opacity duration-700 pointer-events-none ${visible ? 'opacity-100' : 'opacity-0'}`} />
 
-      <Header visible={visible} t={t} />
+      <Hero
+        hidden={activeSection !== 'home'}
+        copy={t.home}
+        onNavigate={handleNav}
+        onOpenPresentation={onOpenPresentation}
+      />
       <LanguageToggle language={language} toggleLanguage={toggleLanguage} />
       <RecruiterHUD activeSection={activeSection} onNavigate={handleNav} labels={t.labels} />
-
-      {/* Mobile Touch Gesture HUD (Tactical Polish) */}
-      {!visible && (
-        <div className="absolute bottom-24 left-1/2 transform -translate-x-1/2 z-10 md:hidden flex flex-col items-center gap-1.5 pointer-events-none">
-          <div className="flex items-center gap-3 bg-black/80 backdrop-blur-md px-4 py-2 rounded-full border border-white/10 shadow-[0_4px_16px_rgba(0,0,0,0.6)]">
-            <span className="text-[10px] font-mono text-cyan-400 tracking-wider flex items-center gap-1">
-              👆 {language === 'en' ? 'Drag to rotate' : language === 'es' ? 'Arrastra para rotar' : '拖拽旋转'}
-            </span>
-            <div className="w-[1px] h-3 bg-white/20" />
-            <span className="text-[10px] font-mono text-pink-400 tracking-wider flex items-center gap-1">
-              ✌️ {language === 'en' ? 'Pinch to zoom' : language === 'es' ? 'Pellizca para zoom' : '捏合缩放'}
-            </span>
-          </div>
-          <button 
-            onClick={(e) => {
-              e.stopPropagation();
-              playClickSound();
-              window.dispatchEvent(new CustomEvent('reset-camera'));
-            }}
-            className="pointer-events-auto bg-white/10 hover:bg-white/20 active:bg-white/30 text-white border border-white/10 rounded-full px-3 py-1 text-[9px] font-mono tracking-wider transition-all shadow-md uppercase"
-          >
-            🔄 {language === 'en' ? 'RESET VIEW' : language === 'es' ? 'REINICIAR VISTA' : '重置视角'}
-          </button>
-        </div>
-      )}
 
       <div 
         className={`absolute inset-0 z-20 flex items-center justify-center transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${visible ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none filter blur-sm'}`}
