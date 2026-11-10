@@ -5,11 +5,15 @@ export const TRANSLATIONS = {
   en: {
     home: {
       role: "Full Stack Creative Engineer",
-      description: "Explore the 3D workspace. Click the elements to navigate:",
-      objects: {
-        laptop: "Laptop (Projects)",
-        brain: "Brain (AI Chat)",
-        phone: "Phone (Contact)"
+      description: "I build fast, polished web products and integrate generative AI into them. Open to freelance projects and full-time roles.",
+      cta: {
+        sound: "Listen",
+        mute: "Mute",
+        replay: "Replay",
+
+        next: "Next",
+        quickView: "Quick view",
+        fullView: "3D view"
       }
     },
     projects: {
@@ -54,7 +58,7 @@ export const TRANSLATIONS = {
     },
     about: {
       title: "Neural Assistant",
-      subtitle: "Powered by Gemini 2.5 Flash",
+      subtitle: "Powered by Gemini 3 Flash",
       placeholder: "Ask about my experience...",
       send: "Send",
       initialMessage: "Hello! I'm the AI assistant for this portfolio. Ask me about Luis's skills, experience, or favorite tech stack.",
@@ -79,7 +83,6 @@ export const TRANSLATIONS = {
       contact: "CONTACT"
     },
     instructions: {
-      home: "Click objects to navigate",
       section: "Press X or Click Close to return"
     },
     stats: {
@@ -103,11 +106,15 @@ export const TRANSLATIONS = {
   es: {
     home: {
       role: "Ingeniero Creativo Full Stack",
-      description: "Explora el espacio 3D. Haz clic en los elementos para navegar:",
-      objects: {
-        laptop: "Laptop (Proyectos)",
-        brain: "Cerebro (Chat IA)",
-        phone: "Teléfono (Contacto)"
+      description: "Construyo productos web rápidos y cuidados, e integro IA generativa en ellos. Disponible para proyectos freelance y puestos a tiempo completo.",
+      cta: {
+        sound: "Escuchar",
+        mute: "Silenciar",
+        replay: "Ver de nuevo",
+
+        next: "Siguiente",
+        quickView: "Versión rápida",
+        fullView: "Vista 3D"
       }
     },
     projects: {
@@ -152,7 +159,7 @@ export const TRANSLATIONS = {
     },
     about: {
       title: "Asistente Neuronal",
-      subtitle: "Potenciado por Gemini 2.5 Flash",
+      subtitle: "Potenciado por Gemini 3 Flash",
       placeholder: "Pregunta sobre mi experiencia...",
       send: "Enviar",
       initialMessage: "¡Hola! Soy el asistente IA de este portafolio. Pregúntame sobre las habilidades, experiencia o stack tecnológico de Luis.",
@@ -177,7 +184,6 @@ export const TRANSLATIONS = {
       contact: "CONTACTO"
     },
     instructions: {
-      home: "Haz clic en los objetos para navegar",
       section: "Presiona X o Cierra para volver"
     },
     stats: {
@@ -201,11 +207,15 @@ export const TRANSLATIONS = {
   zh: {
     home: {
       role: "全栈创意工程师",
-      description: "探索 3D 工作空间。点击元素进行导航：",
-      objects: {
-        laptop: "笔记本 (项目)",
-        brain: "大脑 (AI 聊天)",
-        phone: "手机 (联系方式)"
+      description: "我打造快速、精致的 Web 产品，并将生成式 AI 融入其中。目前接受自由职业项目和全职机会。",
+      cta: {
+        sound: "播放声音",
+        mute: "静音",
+        replay: "重新播放",
+
+        next: "下一步",
+        quickView: "快速版",
+        fullView: "3D 视图"
       }
     },
     projects: {
@@ -250,8 +260,8 @@ export const TRANSLATIONS = {
     },
     about: {
       title: "神经助手",
-      subtitle: "由 Gemini 2.5 Flash 驱动",
-      placeholder: "询问我的经验...",
+      subtitle: "由 Gemini 3 Flash 驱动",
+      placeholder: "询问我的���验...",
       send: "发送",
       initialMessage: "您好！我是这个作品集的 AI 助手。您可以问我关于 Luis 的技能、经验或技术栈的问题。",
       quickQuestions: [
@@ -275,7 +285,6 @@ export const TRANSLATIONS = {
       contact: "联系方式"
     },
     instructions: {
-      home: "点击物体进行导航",
       section: "按 X 或点击关闭以返回"
     },
     stats: {

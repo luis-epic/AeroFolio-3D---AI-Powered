@@ -2,10 +2,12 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { useThree, ThreeElements } from '@react-three/fiber';
 import { Vector2 } from 'three';
-import { CameraControls, Environment, MeshReflectorMaterial, ContactShadows, CameraShake, BakeShadows, Preload, AdaptiveEvents } from '@react-three/drei';
+import { CameraControls, Environment, MeshReflectorMaterial, ContactShadows, BakeShadows, Preload, AdaptiveEvents } from '@react-three/drei';
 import { EffectComposer, Bloom, Vignette, Glitch } from '@react-three/postprocessing';
 import CameraControlsImpl from 'camera-controls';
-import { Laptop, Brain, Smartphone, TechOrbit, ResumePaper, CoffeeMug, HoloProjector } from './SceneElements';
+import { Laptop, Brain, Smartphone, TechOrbit, ResumePaper, CoffeeMug } from './SceneElements';
+import HoloVideo from './HoloVideo';
+import Reveal from './Reveal';
 import { CAMERA_POSITIONS } from '../constants';
 import { Section } from '../types';
 
@@ -18,7 +20,10 @@ interface ExperienceProps {
     about: string;
     contact: string;
   };
-  aiState: 'idle' | 'thinking'; // Received from App
+  videoPaused: boolean;
+  soundOn: boolean;
+  onSoundEnd: () => void;
+  onVideoEnded: () => void;
 }
 
 // Define Glitch parameters using Vector2 to satisfy TypeScript requirements
@@ -36,10 +41,9 @@ const GLITCH_STRENGTH = new Vector2(0.3, 0.5);
  * eats the bottom half of a tall phone screen.
  */
 const MOBILE_ADJUSTMENTS: Record<Section, { dy: number; dz: number; targetDy: number }> = {
-  // A higher camera looking down pushes the desk lower in the frame, clear of
-  // the hero copy overlaying the top third. Raising `targetDy` alone cannot do
-  // this: `maxPolarAngle` is clamped to PI/2, so the camera cannot tilt up.
-  home: { dy: 2.5, dz: 3.0, targetDy: 0.5 },
+  // Aiming higher pushes the desk and the hologram lower in the frame, clear
+  // of the hero copy overlaying the top third.
+  home: { dy: 0.5, dz: 3.0, targetDy: 1.2 },
   projects: { dy: 0.5, dz: 3.5, targetDy: 0.1 }, // laptop is wide; needs the largest pullback
   about: { dy: 0, dz: 2.5, targetDy: 0.2 },
   contact: { dy: 0, dz: 2.5, targetDy: 0.2 },
@@ -66,7 +70,7 @@ const getCameraConfig = (section: Section, isMobile: boolean) => {
   };
 };
 
-const Experience: React.FC<ExperienceProps> = ({ activeSection, setActiveSection, labels, aiState }) => {
+const Experience: React.FC<ExperienceProps> = ({ activeSection, setActiveSection, labels, videoPaused, soundOn, onSoundEnd, onVideoEnded }) => {
   const controlsRef = useRef<CameraControls>(null);
   // IMPORTANT: use `size` (canvas pixels), NOT `viewport` (three.js world units).
   // `viewport.width` scales with camera distance, so deriving `isMobile` from it
@@ -212,18 +216,6 @@ const Experience: React.FC<ExperienceProps> = ({ activeSection, setActiveSection
         makeDefault 
       />
 
-      {/* Camera Shake Effect - Triggered on section change */}
-      <CameraShake 
-        maxYaw={0.05} 
-        maxPitch={0.05} 
-        maxRoll={0.05} 
-        yawFrequency={triggerGlitch ? 2 : 0} 
-        pitchFrequency={triggerGlitch ? 2 : 0} 
-        rollFrequency={triggerGlitch ? 2 : 0}
-        intensity={triggerGlitch ? 1 : 0}
-        decay={true}
-        decayRate={0.65}
-      />
 
       {/* Floating Desk Platform */}
       <group position={[0, -0.5, 0]}>
@@ -257,8 +249,8 @@ const Experience: React.FC<ExperienceProps> = ({ activeSection, setActiveSection
         </mesh>
       </group>
       
-      {/* Background Hologram Projector - Now Reactive to AI State */}
-      <HoloProjector aiState={aiState} />
+      {/* Background hologram: the presentation video, shown full frame */}
+      <HoloVideo paused={videoPaused} soundOn={soundOn} onSoundEnd={onSoundEnd} onEnded={onVideoEnded} />
 
       {/* Interactive Elements */}
       <TechOrbit 
@@ -266,29 +258,40 @@ const Experience: React.FC<ExperienceProps> = ({ activeSection, setActiveSection
         hovered={isLaptopHovered} 
       />
 
-      <Laptop 
-        active={activeSection === 'projects'} 
-        onClick={() => setActiveSection('projects')}
-        label={labels.projects}
-        onHoverChange={setIsLaptopHovered}
-      />
+      {/* The desk objects pop in one after another, centre first. */}
+      <Reveal delay={0.5} origin={[0, 0.1, 0]}>
+        <Laptop 
+          active={activeSection === 'projects'} 
+          onClick={() => setActiveSection('projects')}
+          label={labels.projects}
+          onHoverChange={setIsLaptopHovered}
+        />
+      </Reveal>
 
-      <Brain 
-        active={activeSection === 'about'} 
-        onClick={() => setActiveSection('about')} 
-        label={labels.about}
-        visible={activeSection === 'home' || activeSection === 'about'} 
-      />
+      <Reveal delay={0.75} origin={[-2.5, 0.55, 0.5]}>
+        <Brain 
+          active={activeSection === 'about'} 
+          onClick={() => setActiveSection('about')} 
+          label={labels.about}
+          visible={activeSection === 'home' || activeSection === 'about'} 
+        />
+      </Reveal>
 
-      <Smartphone 
-        active={activeSection === 'contact'} 
-        onClick={() => setActiveSection('contact')} 
-        label={labels.contact}
-        visible={activeSection === 'home' || activeSection === 'contact'} 
-      />
+      <Reveal delay={0.9} origin={[2.5, 0.5, 0.5]}>
+        <Smartphone 
+          active={activeSection === 'contact'} 
+          onClick={() => setActiveSection('contact')} 
+          label={labels.contact}
+          visible={activeSection === 'home' || activeSection === 'contact'} 
+        />
+      </Reveal>
 
-      <ResumePaper />
-      <CoffeeMug />
+      <Reveal delay={1.1} origin={[-1.1, 0.4, 1.2]}>
+        <CoffeeMug />
+      </Reveal>
+      <Reveal delay={1.2} origin={[1.1, 0.4, 1.2]}>
+        <ResumePaper />
+      </Reveal>
     </>
   );
 };

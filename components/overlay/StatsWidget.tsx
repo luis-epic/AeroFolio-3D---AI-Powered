@@ -36,8 +36,8 @@ const StatsWidget: React.FC<StatsWidgetProps> = ({ data, error, labels }) => {
 
   if (error) {
     return (
-      <div className="mb-6 w-full max-w-sm rounded border border-emerald-500/20 bg-emerald-900/10 px-3 py-2.5 text-center">
-        <p className="text-[9px] leading-relaxed text-emerald-300/80 font-mono">
+      <div className="relative mb-6 w-full max-w-md rounded-xl border border-emerald-400/30 bg-white/[0.04] px-4 py-3 text-center">
+        <p className="text-xs leading-relaxed text-emerald-200 font-mono">
           {error === 'rate-limited'
             ? labels.rateLimited
             : labels.unavailable}
@@ -46,7 +46,7 @@ const StatsWidget: React.FC<StatsWidgetProps> = ({ data, error, labels }) => {
           href="https://github.com/luis-epic"
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-1 inline-block text-[9px] font-mono text-emerald-400 underline decoration-dotted hover:text-emerald-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
+          className="mt-1 inline-block text-xs font-mono text-emerald-400 underline decoration-dotted hover:text-emerald-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400"
         >
           {labels.viewOnGitHub}
         </a>
@@ -55,7 +55,7 @@ const StatsWidget: React.FC<StatsWidgetProps> = ({ data, error, labels }) => {
   }
 
   return (
-    <div className="mb-6 h-12 w-full max-w-sm bg-emerald-900/10 animate-pulse rounded border border-emerald-500/10 flex items-center justify-center text-[9px] text-emerald-500">
+    <div className="relative mb-6 h-12 w-full max-w-md bg-white/[0.04] animate-pulse rounded-xl border border-emerald-400/30 flex items-center justify-center font-mono text-xs text-emerald-200">
       {labels.fetching}
     </div>
   );

@@ -33,21 +33,13 @@ export default defineConfig(({ mode }) => {
       chunkSizeWarningLimit: 900,
       rollupOptions: {
         output: {
-          /**
-           * Split heavy 3D vendor code out of the entry chunk.
-           *
-           * Previously everything shipped as one ~1.6MB file, so the browser had
-           * to download and parse the entire Three.js stack before painting any
-           * UI. Separate chunks let the shell render while the 3D layer streams
-           * in, and they cache independently across deploys.
-           */
+          // Vendor code changes less often than app code, so it caches
+          // independently across deploys.
           manualChunks(id) {
             if (!id.includes('node_modules')) return;
 
             // The Three.js core and `postprocessing` import each other heavily,
-            // so the bundler merges them back together to avoid circular chunk
-            // dependencies. Naming them separately would be misleading, so the
-            // renderer and its effect pipeline share one honest bucket.
+            // so they share one chunk instead of creating circular chunks.
             if (
               id.includes('node_modules/three/') ||
               id.includes('postprocessing') ||
@@ -55,7 +47,6 @@ export default defineConfig(({ mode }) => {
             ) {
               return 'vendor-three';
             }
-            // React Three Fiber, drei, and the loaders/controls layered on top.
             if (
               id.includes('@react-three') ||
               id.includes('three-stdlib') ||

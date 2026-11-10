@@ -2,8 +2,10 @@ import { Section, CameraTarget, ProjectData } from './types';
 
 export const CAMERA_POSITIONS: Record<Section, CameraTarget> = {
   home: {
-    position: [0, 4, 8],
-    target: [0, 0, 0],
+    // A low camera aimed above the desk pushes the desk into the lower third
+    // and leaves the rest of the frame to the hologram behind it.
+    position: [0, 3, 9],
+    target: [0, 2.5, 0],
   },
   about: {
     position: [-2, 1.5, 3], // Focus on "Brain" (Left side)
@@ -19,6 +21,18 @@ export const CAMERA_POSITIONS: Record<Section, CameraTarget> = {
     target: [2.5, 0.5, 0], // Center on phone position
   },
 };
+
+// Paths are relative because `vite.config.ts` builds with `base: './'`.
+export const HERO_MEDIA = {
+  mp4: './hero/hero.mp4',
+  mp4Mobile: './hero/hero-mobile.mp4',
+  poster: './hero/hero-poster.jpg',
+  still: './hero/hero-still.jpg',
+  hasAudio: true,
+};
+
+// Wide enough for the portrait video to sit beside the copy instead of behind it.
+export const HERO_SPLIT_QUERY = '(min-width: 768px) and (min-aspect-ratio: 5/4)';
 
 export const MOCK_PROJECTS: ProjectData[] = [
   {

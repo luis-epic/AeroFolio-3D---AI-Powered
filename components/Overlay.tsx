@@ -7,28 +7,45 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { Language } from '../translations';
 import { playHoverSound, playClickSound } from '../utils/soundEngine';
 import { fetchGitHubProfile, type GitHubProfile, type GitHubFailureReason } from '../services/githubService';
-import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
-import { Mic, Volume2, VolumeX } from 'lucide-react';
+import { Box, Mic, Volume2, VolumeX, Zap } from 'lucide-react';
 import Navigation from './overlay/Navigation';
 import StatsWidget from './overlay/StatsWidget';
+import Hero from './overlay/Hero';
+import ScrambleText from './overlay/ScrambleText';
+import ContactLinks from './overlay/ContactLinks';
 import { Projects } from './Projects';
 
 interface OverlayProps {
   activeSection: Section;
   onClose: () => void;
   setActiveSection: (section: Section) => void;
-  setAiState: (state: 'idle' | 'thinking') => void;
+  soundOn: boolean;
+  onToggleSound: () => void;
+  heroEnded: boolean;
+  liteMode: boolean;
+  onToggleLiteMode: () => void;
 }
 
 // --- CUSTOM CURSOR COMPONENT (TACTICAL PRECISION) ---
 const CustomCursor: React.FC = () => {
   const cursorRef = useRef<HTMLDivElement>(null);
   const ringRef = useRef<HTMLDivElement>(null);
-  const [hovering, setHovering] = useState(false);
+  // Touch devices have no pointer to replace.
+  const [enabled] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(pointer: fine)').matches
+  );
+  // Hover comes from two sources (DOM controls and 3D objects); tracking them
+  // separately keeps one from cancelling the other.
+  const [domHover, setDomHover] = useState(false);
+  const [sceneHover, setSceneHover] = useState(false);
+  const hovering = domHover || sceneHover;
   const pos = useRef({ x: -100, y: -100 });
   const ringPos = useRef({ x: -100, y: -100 });
 
   useEffect(() => {
+    if (!enabled) return;
+    document.documentElement.classList.add('custom-cursor');
+
     const onMouseMove = (e: MouseEvent) => {
       pos.current = { x: e.clientX, y: e.clientY };
       // Show cursor on first move
@@ -36,41 +53,31 @@ const CustomCursor: React.FC = () => {
       if (ringRef.current) ringRef.current.style.opacity = "1";
     };
 
-    const onHoverStart = () => setHovering(true);
-    const onHoverEnd = () => setHovering(false);
-
-    window.addEventListener('mousemove', onMouseMove);
-    window.addEventListener('cursor-hover-start', onHoverStart);
-    window.addEventListener('cursor-hover-end', onHoverEnd);
+    const onSceneHoverStart = () => setSceneHover(true);
+    const onSceneHoverEnd = () => setSceneHover(false);
 
     const onMouseOver = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (target.tagName === 'BUTTON' || target.tagName === 'A' || target.tagName === 'INPUT' || target.closest('button') || target.closest('a')) {
-        setHovering(true);
-      }
-    };
-    
-    const onMouseOut = (e: MouseEvent) => {
-       const target = e.target as HTMLElement;
-       if (target.tagName === 'BUTTON' || target.tagName === 'A') {
-         setHovering(false);
-       }
+      const target = e.target as Element | null;
+      setDomHover(Boolean(target?.closest?.('button:not(:disabled), a[href], input, textarea, select, [role="button"]')));
     };
 
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('cursor-hover-start', onSceneHoverStart);
+    window.addEventListener('cursor-hover-end', onSceneHoverEnd);
     document.addEventListener('mouseover', onMouseOver);
-    document.addEventListener('mouseout', onMouseOut);
 
     return () => {
+      document.documentElement.classList.remove('custom-cursor');
       window.removeEventListener('mousemove', onMouseMove);
-      window.removeEventListener('cursor-hover-start', onHoverStart);
-      window.removeEventListener('cursor-hover-end', onHoverEnd);
+      window.removeEventListener('cursor-hover-start', onSceneHoverStart);
+      window.removeEventListener('cursor-hover-end', onSceneHoverEnd);
       document.removeEventListener('mouseover', onMouseOver);
-      document.removeEventListener('mouseout', onMouseOut);
     };
-  }, []);
+  }, [enabled]);
 
   // Animation Loop for smooth trailing
   useEffect(() => {
+    if (!enabled) return;
     let frame: number;
     const animate = () => {
       // INCREASED SPEED: Changed 0.15 to 0.35 for a snappier, responsive feel
@@ -85,7 +92,9 @@ const CustomCursor: React.FC = () => {
     };
     frame = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(frame);
-  }, []);
+  }, [enabled]);
+
+  if (!enabled) return null;
 
   return (
     <>
@@ -116,75 +125,6 @@ const CustomCursor: React.FC = () => {
   );
 };
 
-// --- SCRAMBLE TEXT COMPONENT ---
-const SCRAMBLE_CHARS = "!<>-_\\/[]{}—=+*^?#________";
-const TICK_MS = 30;
-const MS_PER_LETTER = 45; // wall-clock time before one more letter is revealed
-const MAX_SCRAMBLE_MS = 2500; // hard cap so long strings still resolve quickly
-
-/**
- * Decodes `text` from random characters.
- *
- * Accessibility: the animated characters are decorative noise, so they are
- * hidden from assistive tech and the real text is exposed via a visually hidden
- * span. Without this a screen reader announces garbage like
- * "LUIS MART-?\^ FULL STAC=]_!/[". Honors `prefers-reduced-motion`.
- */
-const ScrambleText: React.FC<{ text: string; className?: string }> = ({ text, className }) => {
-  const prefersReducedMotion = usePrefersReducedMotion();
-  const [display, setDisplay] = useState(text);
-
-  useEffect(() => {
-    // Respect the motion preference: render the final text immediately.
-    if (prefersReducedMotion) {
-      setDisplay(text);
-      return;
-    }
-
-    // Progress is derived from elapsed wall-clock time, not from a tick counter.
-    // The 3D canvas can starve the main thread and throttle this interval, and a
-    // per-tick counter then crawled (~7 letters in 10s on a busy frame budget).
-    // Time-based progress always resolves within `duration` no matter how often
-    // the timer actually fires.
-    const startedAt = Date.now();
-    const duration = Math.min(text.length * MS_PER_LETTER, MAX_SCRAMBLE_MS);
-
-    const interval = setInterval(() => {
-      const progress = (Date.now() - startedAt) / duration;
-
-      if (progress >= 1) {
-        // Guarantee the exact final string, then stop.
-        setDisplay(text);
-        clearInterval(interval);
-        return;
-      }
-
-      const revealed = Math.floor(progress * text.length);
-
-      setDisplay(
-        text
-          .split("")
-          .map((letter, index) => {
-            if (index < revealed) return text[index];
-            // Preserve spaces so word shapes stay stable while decoding.
-            if (letter === " ") return " ";
-            return SCRAMBLE_CHARS[Math.floor(Math.random() * SCRAMBLE_CHARS.length)];
-          })
-          .join("")
-      );
-    }, TICK_MS);
-
-    return () => clearInterval(interval);
-  }, [text, prefersReducedMotion]);
-
-  return (
-    <span className={className}>
-      <span aria-hidden="true">{display}</span>
-      <span className="sr-only">{text}</span>
-    </span>
-  );
-};
-
 // Extracted component to prevent re-renders on parent state change
 const LanguageToggle: React.FC<{ language: Language; toggleLanguage: () => void }> = ({ language, toggleLanguage }) => {
   const getLanguageLabel = () => {
@@ -198,9 +138,35 @@ const LanguageToggle: React.FC<{ language: Language; toggleLanguage: () => void 
       onClick={() => { toggleLanguage(); playClickSound(); }}
       onMouseEnter={playHoverSound}
       aria-label={`Change language. Current language: ${getLanguageLabel()}`}
-      className="absolute top-8 right-8 z-50 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white px-3 py-1 rounded-full text-sm font-mono transition-all pointer-events-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+      className={TOP_BUTTON_CLASS}
     >
       {getLanguageLabel()}
+    </button>
+  );
+};
+
+// Shared by the projects, assistant and contact panels so they read as one system.
+const PANEL_HEADER_CLASS = 'px-5 pt-11 pb-4 md:px-6 border-b border-white/10 bg-gradient-to-r';
+const PANEL_TITLE_CLASS = 'text-lg md:text-xl font-bold flex items-center gap-3 font-mono tracking-widest';
+const PANEL_SUBTITLE_CLASS = 'text-[10px] uppercase tracking-[0.2em] ml-5';
+
+const TOP_BUTTON_CLASS =
+  'inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white px-3 py-1 rounded-full text-sm font-mono transition-all pointer-events-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70';
+
+// Switches between the 3D scene and the plain, lighter page.
+const ViewToggle: React.FC<{ liteMode: boolean; onToggle: () => void; labels: { quickView: string; fullView: string } }> = ({ liteMode, onToggle, labels }) => {
+  const Icon = liteMode ? Box : Zap;
+  const label = liteMode ? labels.fullView : labels.quickView;
+  return (
+    <button
+      type="button"
+      onClick={() => { onToggle(); playClickSound(); }}
+      onMouseEnter={playHoverSound}
+      aria-label={label}
+      title={label}
+      className={`${TOP_BUTTON_CLASS} !px-2 !py-2`}
+    >
+      <Icon aria-hidden="true" className="h-4 w-4 shrink-0" />
     </button>
   );
 };
@@ -210,32 +176,19 @@ const RecruiterHUD: React.FC<{
   activeSection: Section; 
   onNavigate: (s: Section) => void;
   labels: Record<Section, string>;
-}> = ({ activeSection, onNavigate, labels }) => (
+  nextLabel: string;
+  alwaysVisible: boolean;
+}> = ({ activeSection, onNavigate, labels, nextLabel, alwaysVisible }) => (
   <Navigation
     activeSection={activeSection}
     onNavigate={onNavigate}
     labels={labels}
+    nextLabel={nextLabel}
+    alwaysVisible={alwaysVisible}
   />
 );
 
-// Extracted Header Component to prevent flickering
-const Header: React.FC<{ visible: boolean; t: any }> = ({ visible, t }) => (
-  <div className={`absolute top-10 left-10 z-10 pointer-events-none transition-all duration-700 ease-out ${visible ? 'opacity-0 translate-y-[-20px] filter blur-md' : 'opacity-100 filter blur-0'}`}>
-    <h1 className="text-4xl md:text-6xl font-bold text-white tracking-tighter font-display uppercase drop-shadow-2xl">
-      <ScrambleText text="Luis Martinez" />
-      <span className="block text-cyan-400 text-lg md:text-xl mt-3 font-mono tracking-widest font-normal opacity-90 border-l-2 border-pink-500 pl-3">
-         <ScrambleText text={t.home.role} />
-      </span>
-    </h1>
-    {!visible && (
-      <p className="text-gray-400 mt-6 max-w-md text-sm md:text-base leading-relaxed font-sans opacity-80 mix-blend-screen">
-        {t.home.description}
-      </p>
-    )}
-  </div>
-);
-
-const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSection, setAiState }) => {
+const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSection, soundOn, onToggleSound, heroEnded, liteMode, onToggleLiteMode }) => {
   const [visible, setVisible] = useState(false);
   const { t, language, setLanguage } = useLanguage();
   
@@ -343,17 +296,13 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
     setChatHistory(prev => [...prev, userMsg]);
     setPrompt("");
     
-    // Set Loading States
     setIsTyping(true);
-    setAiState('thinking'); // Update global state for 3D reactivity
     
     const responseText = await generateAIResponse(text, language);
     
     setChatHistory(prev => [...prev, { role: 'model', text: responseText }]);
     
-    // Reset Loading States
     setIsTyping(false);
-    setAiState('idle');
     
     speakText(responseText);
   };
@@ -381,7 +330,6 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
     React.startTransition(() => {
       if (section === 'home') {
         onClose();
-        // Dispatch reset camera event to reset the 3D scene view smoothly
         window.dispatchEvent(new CustomEvent('reset-camera'));
       }
       else setActiveSection(section);
@@ -427,39 +375,29 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
       {/* Background Dimmer (Focus Visual) */}
       <div className={`absolute inset-0 bg-black/60 backdrop-blur-[2px] z-10 transition-opacity duration-700 pointer-events-none ${visible ? 'opacity-100' : 'opacity-0'}`} />
 
-      <Header visible={visible} t={t} />
-      <LanguageToggle language={language} toggleLanguage={toggleLanguage} />
-      <RecruiterHUD activeSection={activeSection} onNavigate={handleNav} labels={t.labels} />
-
-      {/* Mobile Touch Gesture HUD (Tactical Polish) */}
-      {!visible && (
-        <div className="absolute bottom-24 left-1/2 transform -translate-x-1/2 z-10 md:hidden flex flex-col items-center gap-1.5 pointer-events-none">
-          <div className="flex items-center gap-3 bg-black/80 backdrop-blur-md px-4 py-2 rounded-full border border-white/10 shadow-[0_4px_16px_rgba(0,0,0,0.6)]">
-            <span className="text-[10px] font-mono text-cyan-400 tracking-wider flex items-center gap-1">
-              👆 {language === 'en' ? 'Drag to rotate' : language === 'es' ? 'Arrastra para rotar' : '拖拽旋转'}
-            </span>
-            <div className="w-[1px] h-3 bg-white/20" />
-            <span className="text-[10px] font-mono text-pink-400 tracking-wider flex items-center gap-1">
-              ✌️ {language === 'en' ? 'Pinch to zoom' : language === 'es' ? 'Pellizca para zoom' : '捏合缩放'}
-            </span>
-          </div>
-          <button 
-            onClick={(e) => {
-              e.stopPropagation();
-              playClickSound();
-              window.dispatchEvent(new CustomEvent('reset-camera'));
-            }}
-            className="pointer-events-auto bg-white/10 hover:bg-white/20 active:bg-white/30 text-white border border-white/10 rounded-full px-3 py-1 text-[9px] font-mono tracking-wider transition-all shadow-md uppercase"
-          >
-            🔄 {language === 'en' ? 'RESET VIEW' : language === 'es' ? 'REINICIAR VISTA' : '重置视角'}
-          </button>
-        </div>
-      )}
+      <Hero
+        hidden={activeSection !== 'home'}
+        copy={t.home}
+        soundOn={soundOn}
+        heroEnded={heroEnded}
+        onToggleSound={onToggleSound}
+      />
+      <div className="absolute top-8 right-6 md:right-8 z-50 flex items-center gap-2">
+        <ViewToggle liteMode={liteMode} onToggle={onToggleLiteMode} labels={t.home.cta} />
+        <LanguageToggle language={language} toggleLanguage={toggleLanguage} />
+      </div>
+      <RecruiterHUD
+        activeSection={activeSection}
+        onNavigate={handleNav}
+        labels={t.labels}
+        nextLabel={t.home.cta.next}
+        alwaysVisible={liteMode}
+      />
 
       <div 
-        className={`absolute inset-0 z-20 flex items-center justify-center transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${visible ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none filter blur-sm'}`}
+        className={`absolute inset-0 z-20 flex items-center justify-center pt-20 pb-28 transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${visible ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none filter blur-sm'}`}
       >
-        <div className="relative w-full max-w-5xl h-[80vh] flex flex-col mt-10 md:mt-0 p-4 md:p-6 md:px-10">
+        <div className="relative w-full max-w-5xl h-full max-h-[720px] flex flex-col px-4 md:px-10">
           
           <div className="flex-1 bg-glass-dark backdrop-blur-3xl border border-glass-border rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col md:flex-row relative group">
             
@@ -490,16 +428,16 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
                 className="flex flex-col w-full h-full"
               >
                 {/* Header */}
-                <div className="p-4 pt-11 md:p-5 md:pt-11 pr-16 border-b border-white/10 bg-gradient-to-r from-blue-500/10 via-cyan-500/5 to-transparent">
-                  <h2 className="text-xl font-bold text-cyan-400 flex items-center gap-3 font-mono tracking-widest">
+                <div className={`${PANEL_HEADER_CLASS} pr-16 from-cyan-500/10 via-cyan-500/5 to-transparent`}>
+                  <h2 className={`${PANEL_TITLE_CLASS} text-cyan-400`}>
                      <span className="w-2 h-2 bg-cyan-500 animate-pulse rounded-full shadow-[0_0_8px_#22d3ee]"></span>
                      <ScrambleText text={t.projects.title} />
                   </h2>
-                  <p className="text-[10px] text-cyan-300/60 uppercase tracking-[0.2em] ml-5">SYSTEM.ROOT.PROJECTS</p>
+                  <p className={`${PANEL_SUBTITLE_CLASS} text-cyan-300/60`}>SYSTEM.ROOT.PROJECTS</p>
                 </div>
                 
                 {/* Projects carousel */}
-                <div className="flex-1 overflow-hidden flex flex-col">
+                <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
                   <Projects 
                     items={t.projects.items}
                     playClickSound={playClickSound}
@@ -519,15 +457,15 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
               >
                 
                 {/* Right/Bottom Side: Terminal Chat (Takes remaining space) */}
-                <div className="flex-1 flex flex-col w-full h-full md:border-l border-white/10 relative order-2 md:order-1">
+                <div className="flex-1 min-w-0 min-h-0 flex flex-col relative order-2 md:order-1">
                   {/* Header HUD */}
-                  <div className="p-4 pt-10 md:p-6 md:pt-12 border-b border-white/10 bg-gradient-to-r from-pink-500/10 via-purple-500/5 to-transparent flex justify-between items-center">
+                  <div className={`${PANEL_HEADER_CLASS} from-pink-500/10 via-pink-500/5 to-transparent flex justify-between items-center gap-3`}>
                     <div>
-                      <h2 className="text-lg md:text-xl font-bold text-pink-400 flex items-center gap-3 font-mono tracking-widest">
+                      <h2 className={`${PANEL_TITLE_CLASS} text-pink-400`}>
                          <span className="w-2 h-2 bg-pink-500 animate-pulse rounded-full shadow-[0_0_8px_#ec4899]"></span>
                          <ScrambleText text={t.about.title} />
                       </h2>
-                      <p className="text-[9px] md:text-[10px] text-pink-300/60 uppercase tracking-[0.2em] ml-5">{t.about.subtitle}</p>
+                      <p className={`${PANEL_SUBTITLE_CLASS} text-pink-300/60`}>{t.about.subtitle}</p>
                     </div>
                     <button 
                       onClick={() => {
@@ -538,7 +476,7 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
                          }
                       }}
                       onMouseEnter={playHoverSound}
-                      className={`p-2 rounded-sm border border-white/10 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-400 ${isMuted ? 'bg-transparent text-gray-500' : 'bg-pink-500/20 text-pink-300 border-pink-500/50 shadow-[0_0_10px_rgba(236,72,153,0.3)]'}`}
+                      className={`p-2 rounded-lg border border-white/10 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-400 ${isMuted ? 'bg-transparent text-gray-500' : 'bg-pink-500/20 text-pink-300 border-pink-500/50 shadow-[0_0_10px_rgba(236,72,153,0.3)]'}`}
                       aria-label={isMuted ? 'Unmute assistant voice' : 'Mute assistant voice'}
                       aria-pressed={!isMuted}
                     >
@@ -565,10 +503,10 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
                         transition={{ type: "spring", stiffness: 400, damping: 25 }}
                         className={`flex w-full ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                       >
-                        <div className={`relative max-w-[90%] md:max-w-[85%] p-4 md:p-5 text-sm font-mono leading-relaxed shadow-lg backdrop-blur-md transition-all duration-300
+                        <div className={`relative max-w-[90%] md:max-w-[85%] p-4 text-sm font-mono leading-relaxed border border-pink-400/30 rounded-xl
                           ${msg.role === 'user' 
-                            ? 'bg-glass-light border border-blue-500/30 text-blue-100 rounded-2xl rounded-tr-none shadow-[0_0_15px_rgba(37,99,235,0.1)]' 
-                            : 'bg-glass-dark border border-pink-500/30 text-pink-100 rounded-2xl rounded-tl-none shadow-[0_0_15px_rgba(236,72,153,0.1)]'
+                            ? 'bg-pink-500/15 text-white rounded-tr-none' 
+                            : 'bg-white/[0.04] text-pink-100 rounded-tl-none'
                         }`}>
                            {msg.role === 'model' && (
                               <span className="absolute -top-2 left-4 text-[9px] bg-pink-500/20 border border-pink-500/30 text-pink-300 px-1.5 py-0.5 rounded uppercase tracking-wider hidden md:block">Sys.Log</span>
@@ -586,7 +524,7 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
                          exit={{ opacity: 0, scale: 0.9 }}
                          className="flex justify-start"
                        >
-                         <div className="bg-glass-dark border border-pink-500/30 p-3 rounded-2xl rounded-tl-none flex gap-2 items-center">
+                         <div className="bg-white/[0.04] border border-pink-400/30 p-3 rounded-xl rounded-tl-none flex gap-2 items-center">
                            <div className="w-1.5 h-1.5 bg-pink-500 rounded-full animate-bounce"></div>
                            <div className="w-1.5 h-1.5 bg-pink-500 rounded-full animate-bounce delay-75"></div>
                            <div className="w-1.5 h-1.5 bg-pink-500 rounded-full animate-bounce delay-150"></div>
@@ -659,20 +597,20 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
                 </div>
                 
                 {/* Left/Top Side: Profile & Matrix (Fixed Width on Desktop) */}
-                <div className="w-full md:w-1/3 bg-black/40 flex flex-col p-6 shrink-0 md:shrink md:overflow-y-auto order-1 md:order-2 border-b md:border-none border-white/5 relative">
+                <div className="w-full md:w-72 bg-black/40 flex flex-col p-5 pt-11 shrink-0 max-h-[40%] md:max-h-none overflow-y-auto custom-scrollbar order-1 md:order-2 border-b md:border-b-0 md:border-l border-white/10 relative">
                   
                   {/* Status Indicator */}
-                  <div className="absolute top-4 right-4 flex items-center gap-1">
+                  <div className="absolute top-4 left-24 md:left-5 flex items-center gap-1">
                     <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_5px_#22c55e]"></span>
                     <span className="text-[8px] font-mono text-green-500 tracking-widest">{t.stats.online}</span>
                   </div>
 
-                  <div className="mt-8 md:mt-2 text-center">
+                  <div className="text-center">
                     <div className="w-20 h-20 md:w-24 md:h-24 mx-auto border-2 border-pink-500/50 rounded-full overflow-hidden shadow-[0_0_20px_rgba(236,72,153,0.3)] mb-4 bg-gray-800">
                       <img src={githubData?.avatar_url || 'https://avatars.githubusercontent.com/luis-epic'} alt="Profile" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.src = 'https://api.dicebear.com/7.x/identicon/svg?seed=luis-epic&backgroundColor=1f2937'; }} />
                     </div>
                     <h3 className="text-white font-mono text-lg font-bold"><ScrambleText text={githubData?.name || "Luis Martinez"} /></h3>
-                    <p className="text-pink-400 text-xs font-mono mb-2">{githubData?.bio || "Sr. SWE / UI Architect"}</p>
+                    <p className="text-pink-300 text-xs font-mono leading-relaxed text-pretty mb-2">{githubData?.bio || "Sr. SWE / UI Architect"}</p>
                     
                     {/* Location Pill */}
                     {githubData?.location && (
@@ -743,15 +681,15 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
                 className="flex flex-col w-full h-full"
               >
                 {/* Header HUD */}
-                <div className="p-6 pt-12 pr-16 border-b border-white/10 bg-gradient-to-r from-emerald-500/10 via-green-500/5 to-transparent">
-                  <h2 className="text-xl font-bold text-emerald-400 flex items-center gap-3 font-mono tracking-widest">
+                <div className={`${PANEL_HEADER_CLASS} pr-16 from-emerald-500/10 via-emerald-500/5 to-transparent`}>
+                  <h2 className={`${PANEL_TITLE_CLASS} text-emerald-400`}>
                      <span className="w-2 h-2 bg-emerald-500 animate-pulse rounded-full shadow-[0_0_8px_#10b981]"></span>
                      <ScrambleText text={t.contact.title} />
                   </h2>
-                  <p className="text-[10px] text-emerald-300/60 uppercase tracking-[0.2em] ml-5">{t.stats.signalOpen}</p>
+                  <p className={`${PANEL_SUBTITLE_CLASS} text-emerald-300/60`}>{t.stats.signalOpen}</p>
                 </div>
 
-                <div className="flex-1 flex flex-col items-center justify-center p-8 relative">
+                <div className="flex-1 flex flex-col items-center [justify-content:safe_center] overflow-y-auto custom-scrollbar p-5 md:p-6 relative">
                     {/* Background Decor */}
                     <div className="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none">
                        <div className="w-96 h-96 border border-emerald-500/30 rounded-full animate-spin-slow border-t-transparent"></div>
@@ -760,20 +698,18 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
 
                     {/* LIVE GITHUB STATS WIDGET */}
                     {githubData ? (
-                        <div className="mb-6 w-full max-w-sm grid grid-cols-3 gap-2">
-                           <div className="bg-emerald-900/20 border border-emerald-500/20 p-2 text-center rounded hover:bg-emerald-800/30 transition-colors">
-                               <div className="text-lg font-bold text-white font-mono">{githubData.public_repos}</div>
-                               <div className="text-[8px] md:text-[9px] text-emerald-400 uppercase tracking-widest">{t.stats.repos}</div>
-                           </div>
-                           <div className="bg-emerald-900/20 border border-emerald-500/20 p-2 text-center rounded hover:bg-emerald-800/30 transition-colors">
-                               <div className="text-lg font-bold text-white font-mono">{githubData.stars || 0}</div>
-                               <div className="text-[8px] md:text-[9px] text-emerald-400 uppercase tracking-widest">{t.stats.stars}</div>
-                           </div>
-                           <div className="bg-emerald-900/20 border border-emerald-500/20 p-2 text-center rounded hover:bg-emerald-800/30 transition-colors">
-                               <div className="text-lg font-bold text-white font-mono">{githubData.followers}</div>
-                               <div className="text-[8px] md:text-[9px] text-emerald-400 uppercase tracking-widest">{t.stats.followers}</div>
-                           </div>
-                        </div>
+                        <dl className="relative mb-6 w-full max-w-md grid grid-cols-3 gap-3">
+                           {[
+                             { label: t.stats.repos, value: githubData.public_repos },
+                             { label: t.stats.stars, value: githubData.stars || 0 },
+                             { label: t.stats.followers, value: githubData.followers },
+                           ].map((stat) => (
+                             <div key={stat.label} className="flex flex-col-reverse rounded-xl border border-emerald-400/30 bg-white/[0.04] px-2 py-3 text-center">
+                               <dt className="mt-1 text-[11px] uppercase tracking-wider text-emerald-300">{stat.label}</dt>
+                               <dd className="text-2xl font-bold text-white font-mono">{stat.value}</dd>
+                             </div>
+                           ))}
+                        </dl>
                       ) : (
                       <StatsWidget
                         data={githubData}
@@ -782,55 +718,11 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
                       />
                       )}
 
-                    <p className="text-emerald-100 mb-6 max-w-md font-mono text-sm text-center bg-black/40 p-4 border-l-2 border-emerald-500">
+                    <p className="relative text-white mb-6 max-w-md font-sans text-base leading-relaxed text-center text-pretty">
                        {t.contact.description}
                     </p>
-                    
-                    <motion.div 
-                      initial="hidden"
-                      animate="visible"
-                      variants={{
-                        hidden: { opacity: 0 },
-                        visible: { opacity: 1, transition: { staggerChildren: 0.1, delayChildren: 0.2 } }
-                      }}
-                      className="space-y-4 w-full max-w-sm z-10"
-                    >
-                      
-                      <motion.a 
-                        variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}
-                        href="mailto:luismartinez.developer@gmail.com" onMouseEnter={playHoverSound} className="group relative w-full flex items-center justify-between p-4 bg-emerald-900/10 border border-emerald-500/30 hover:bg-emerald-500/10 hover:border-emerald-400 hover:shadow-[0_0_20px_rgba(16,185,129,0.2)] transition-all overflow-hidden rounded-sm">
-                        <div className="flex items-center gap-4">
-                           <span className="text-emerald-500 font-mono text-lg group-hover:animate-pulse">@</span>
-                           <span className="text-emerald-100 font-mono text-xs uppercase tracking-wider">Send Email</span>
-                        </div>
-                        <span className="text-xs text-emerald-600 font-mono opacity-50 group-hover:opacity-100 transition-opacity">SMTP://CONNECT</span>
-                        {/* Scanline Effect */}
-                        <div className="absolute top-0 bottom-0 w-1 bg-emerald-400 left-0 group-hover:h-full h-0 transition-all duration-300"></div>
-                      </motion.a>
 
-                      <motion.a 
-                        variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}
-                        href="https://www.linkedin.com/in/luisepico/" target="_blank" rel="noopener noreferrer" onMouseEnter={playHoverSound} className="group relative w-full flex items-center justify-between p-4 bg-blue-900/10 border border-blue-500/30 hover:bg-blue-500/10 hover:border-blue-400 hover:shadow-[0_0_20px_rgba(59,130,246,0.2)] transition-all overflow-hidden rounded-sm">
-                        <div className="flex items-center gap-4">
-                           <span className="text-blue-500 font-mono text-lg group-hover:animate-pulse">in</span>
-                           <span className="text-blue-100 font-mono text-xs uppercase tracking-wider">LinkedIn</span>
-                        </div>
-                        <span className="text-xs text-blue-600 font-mono opacity-50 group-hover:opacity-100 transition-opacity">LINK://PROFILE</span>
-                         <div className="absolute top-0 bottom-0 w-1 bg-blue-400 left-0 group-hover:h-full h-0 transition-all duration-300"></div>
-                      </motion.a>
-
-                      <motion.a 
-                        variants={{ hidden: { opacity: 0, y: 10 }, visible: { opacity: 1, y: 0 } }}
-                        href="https://github.com/luis-epic" target="_blank" rel="noopener noreferrer" onMouseEnter={playHoverSound} className="group relative w-full flex items-center justify-between p-4 bg-violet-900/10 border border-violet-500/30 hover:bg-violet-500/10 hover:border-violet-400 hover:shadow-[0_0_20px_rgba(167,139,250,0.2)] transition-all overflow-hidden rounded-sm">
-                        <div className="flex items-center gap-4">
-                           <span className="text-violet-500 font-mono text-lg group-hover:text-white group-hover:animate-pulse">git</span>
-                           <span className="text-violet-200 font-mono text-xs uppercase tracking-wider">GitHub</span>
-                        </div>
-                        <span className="text-xs text-violet-600 font-mono opacity-50 group-hover:opacity-100 transition-opacity">REPO://ACCESS</span>
-                        <div className="absolute top-0 bottom-0 w-1 bg-violet-400 left-0 group-hover:h-full h-0 transition-all duration-300"></div>
-                      </motion.a>
-
-                    </motion.div>
+                    <ContactLinks copy={t.contact} />
                 </div>
               </motion.div>
             )}
