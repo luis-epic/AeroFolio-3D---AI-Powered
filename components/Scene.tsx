@@ -22,7 +22,9 @@ interface SceneProps {
  * navigation) paint before the Three.js stack is downloaded and parsed.
  */
 const Scene: React.FC<SceneProps> = ({ activeSection, setActiveSection, labels, videoPaused, soundOn, onSoundEnd, onVideoEnded }) => {
-  const [dpr, setDpr] = useState(1.5);
+  const [dpr, setDpr] = useState(() =>
+    typeof window !== 'undefined' ? Math.min(window.devicePixelRatio || 1, 2) : 1.5
+  );
 
   return (
     <Canvas
@@ -36,7 +38,7 @@ const Scene: React.FC<SceneProps> = ({ activeSection, setActiveSection, labels, 
         powerPreference: 'high-performance',
       }}
     >
-      <PerformanceMonitor onDecline={() => setDpr(1)} onIncline={() => setDpr(1.5)} />
+      <PerformanceMonitor onDecline={() => setDpr(1)} onIncline={() => setDpr(2)} />
       <AdaptiveDpr pixelated />
       <Suspense fallback={<Loader />}>
         <Experience

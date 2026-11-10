@@ -19,19 +19,19 @@ const HeroVideo: React.FC<HeroVideoProps> = ({ paused, soundOn, onSoundEnd, onEn
   const videoRef = useRef<HTMLVideoElement>(null);
   const prefersReducedMotion = usePrefersReducedMotion();
   const isSplit = useMediaQuery(HERO_SPLIT_QUERY);
-  const isSmallScreen = useMediaQuery('(max-width: 767px)');
   const [failed, setFailed] = useState(false);
 
   // Asking for sound is an explicit request to play, so it overrides the still.
   const showStill = failed || ((prefersReducedMotion || prefersSaveData()) && !soundOn);
-  const src = isSmallScreen ? HERO_MEDIA.mp4Mobile : HERO_MEDIA.mp4;
+  // Always use the high-definition master video for maximum clarity
+  const src = HERO_MEDIA.mp4;
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
-    video.dataset.clip = isSmallScreen ? 'mobile' : 'full';
+    video.dataset.clip = 'full';
     return attachHeroVideo(video);
-  }, [showStill, isSmallScreen]);
+  }, [showStill]);
 
   // The restart with sound happens in the click (see utils/heroPlayer).
   useEffect(() => {
@@ -65,18 +65,31 @@ const HeroVideo: React.FC<HeroVideoProps> = ({ paused, soundOn, onSoundEnd, onEn
     return () => document.removeEventListener('visibilitychange', sync);
   }, [paused, showStill, src, soundOn, onSoundEnd]);
 
-  // The source is portrait (9:16). On wide screens it sits in a column on the
-  // right at its natural ratio instead of being upscaled and cropped.
+  // The source is portrait (9:16). Preserves the full aspect ratio with smooth holographic
+  // lateral feathering so the presentation, name, and elements are 100% visible without harsh box edges.
   const frameClass = isSplit
-    ? 'absolute inset-y-0 right-0 lg:right-[8%] h-full aspect-[9/16] [mask-image:linear-gradient(90deg,transparent,#000_24%,#000_80%,transparent)]'
-    : 'absolute inset-0';
+    ? 'absolute inset-y-0 right-0 md:right-[4%] lg:right-[8%] h-full aspect-[9/16] flex items-center justify-center'
+    : 'absolute inset-0 flex items-center justify-center p-4';
   const mediaClass = isSplit
-    ? 'h-full w-full object-cover'
-    : 'h-full w-full object-cover object-[50%_20%]';
+    ? 'h-full w-full object-contain drop-shadow-[0_0_35px_rgba(0,255,255,0.12)]'
+    : 'h-full max-h-screen w-auto max-w-full aspect-[9/16] object-contain drop-shadow-[0_0_40px_rgba(0,0,0,0.8)]';
+
+  const lateralMaskStyle: React.CSSProperties = {
+    WebkitMaskImage:
+      'linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.2) 1.5%, rgba(0,0,0,0.7) 3.5%, #000 6.5%, #000 95.6%, rgba(0,0,0,0.7) 97.5%, rgba(0,0,0,0.2) 99%, transparent 100%)',
+    maskImage:
+      'linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.2) 1.5%, rgba(0,0,0,0.7) 3.5%, #000 6.5%, #000 95.6%, rgba(0,0,0,0.7) 97.5%, rgba(0,0,0,0.2) 99%, transparent 100%)',
+  };
 
   return (
     <div aria-hidden="true" className="absolute inset-0 overflow-hidden bg-[#050505]">
-      <div className={frameClass}>
+      {/* Ambient background glow for wide view */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center filter blur-3xl opacity-20 scale-110 pointer-events-none"
+        style={{ backgroundImage: `url(${HERO_MEDIA.poster})` }}
+      />
+
+      <div className={frameClass} style={lateralMaskStyle}>
         {showStill ? (
           <img src={HERO_MEDIA.still} alt="" className={mediaClass} />
         ) : (
@@ -97,7 +110,7 @@ const HeroVideo: React.FC<HeroVideoProps> = ({ paused, soundOn, onSoundEnd, onEn
       </div>
 
       {!isSplit && (
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/55 to-black/10" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30 pointer-events-none" />
       )}
     </div>
   );

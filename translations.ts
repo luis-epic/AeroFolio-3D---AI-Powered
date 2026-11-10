@@ -101,6 +101,12 @@ export const TRANSLATIONS = {
       rateLimited: "GitHub's hourly request limit was reached. Live stats will be back shortly.",
       unavailable: "Live GitHub stats are unavailable right now.",
       viewOnGitHub: "View profile on GitHub"
+    },
+    ambient: {
+      label: "Ambient Audio",
+      active: "AMBIENT ON",
+      muted: "AMBIENT OFF",
+      toggleTitle: "Toggle ambient background audio"
     }
   },
   es: {
@@ -202,6 +208,12 @@ export const TRANSLATIONS = {
       rateLimited: "Se alcanzó el límite de peticiones por hora de GitHub. Las estadísticas volverán en breve.",
       unavailable: "Las estadísticas de GitHub no están disponibles ahora mismo.",
       viewOnGitHub: "Ver perfil en GitHub"
+    },
+    ambient: {
+      label: "Audio Ambiental",
+      active: "AMBIENTE ON",
+      muted: "AMBIENTE OFF",
+      toggleTitle: "Alternar audio ambiental de fondo"
     }
   },
   zh: {
@@ -303,6 +315,12 @@ export const TRANSLATIONS = {
       rateLimited: "已达到 GitHub 每小时请求上限，实时数据稍后恢复。",
       unavailable: "实时 GitHub 数据暂时无法获取。",
       viewOnGitHub: "在 GitHub 上查看主页"
+    },
+    ambient: {
+      label: "环境音效",
+      active: "环境音 开",
+      muted: "环境音 关",
+      toggleTitle: "切换背景环境音效"
     }
   }
 };

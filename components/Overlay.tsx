@@ -1,11 +1,11 @@
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Section, ChatMessage } from '../types';
 import { generateAIResponse } from '../services/geminiService';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Language } from '../translations';
-import { playHoverSound, playClickSound } from '../utils/soundEngine';
+import { playHoverSound, playClickSound, duckAmbient, unduckAmbient } from '../utils/soundEngine';
 import { fetchGitHubProfile, type GitHubProfile, type GitHubFailureReason } from '../services/githubService';
 import { Box, Mic, Volume2, VolumeX, Zap } from 'lucide-react';
 import Navigation from './overlay/Navigation';
@@ -284,6 +284,11 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
     else if (language === 'zh') utterance.lang = 'zh-CN';
     utterance.rate = 1.0;
     utterance.pitch = 1.0;
+
+    utterance.onstart = () => duckAmbient(0.2, 0.4);
+    utterance.onend = () => unduckAmbient(0.8);
+    utterance.onerror = () => unduckAmbient(0.8);
+
     window.speechSynthesis.speak(utterance);
   };
 

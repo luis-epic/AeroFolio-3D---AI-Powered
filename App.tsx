@@ -2,6 +2,7 @@
 import React, { Suspense, lazy, useCallback, useEffect, useRef, useState } from 'react';
 import { HERO_MEDIA } from './constants';
 import { playHeroWithSound } from './utils/heroPlayer';
+import { initAutoAmbientTrigger, duckAmbient, unduckAmbient } from './utils/soundEngine';
 import { Section } from './types';
 import Overlay from './components/Overlay';
 import HeroVideo from './components/HeroVideo';
@@ -38,6 +39,21 @@ const AppContent: React.FC = () => {
   const [liteMode, setLiteMode] = useState(readLiteMode);
 
   const { t } = useLanguage();
+
+  // Trigger ambient background audio smoothly on user interaction
+  useEffect(() => {
+    const cleanup = initAutoAmbientTrigger();
+    return cleanup;
+  }, []);
+
+  // Duck ambient audio when the hero presentation audio is playing
+  useEffect(() => {
+    if (soundOn) {
+      duckAmbient(0.2, 0.8);
+    } else {
+      unduckAmbient(1.2);
+    }
+  }, [soundOn]);
 
   const startSound = useCallback(() => {
     playHeroWithSound();

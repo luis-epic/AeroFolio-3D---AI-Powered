@@ -3,6 +3,30 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Ensure window.fetch has a setter so extension interceptors and test harnesses can assign to window.fetch without throwing "Cannot set property fetch of #<Window> which has only a getter" -->
+    <script>
+      (function() {
+        try {
+          var originalFetch = window.fetch;
+          var descriptor = {
+            get: function() {
+              return originalFetch;
+            },
+            set: function(val) {
+              originalFetch = val;
+            },
+            configurable: true,
+            enumerable: true
+          };
+          Object.defineProperty(window, 'fetch', descriptor);
+          if (typeof Window !== 'undefined' && Window.prototype) {
+            try {
+              Object.defineProperty(Window.prototype, 'fetch', descriptor);
+            } catch (_) {}
+          }
+        } catch (_) {}
+      })();
+    </script>
     <title>AeroFolio 3D | Luis Martinez - Full Stack Creative Engineer Portfolio</title>
     <meta name="description" content="Portfolio of Luis Martinez, Full Stack Creative Engineer & UI Architect. Projects built with React, TypeScript and generative AI, plus an AI assistant you can ask about his work." />
     <meta name="keywords" content="Luis Martinez, AeroFolio, portfolio, full stack engineer, frontend architect, react, typescript, gemini ai, AI developer, interactive web" />
