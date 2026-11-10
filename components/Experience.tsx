@@ -41,7 +41,7 @@ const GLITCH_STRENGTH = new Vector2(0.3, 0.5);
 const MOBILE_ADJUSTMENTS: Record<Section, { dy: number; dz: number; targetDy: number }> = {
   // Aiming higher pushes the desk and the hologram lower in the frame, clear
   // of the hero copy overlaying the top third.
-  home: { dy: 0.5, dz: 3.0, targetDy: 1.0 },
+  home: { dy: 0.5, dz: 3.0, targetDy: 1.2 },
   projects: { dy: 0.5, dz: 3.5, targetDy: 0.1 }, // laptop is wide; needs the largest pullback
   about: { dy: 0, dz: 2.5, targetDy: 0.2 },
   contact: { dy: 0, dz: 2.5, targetDy: 0.2 },

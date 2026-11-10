@@ -28,6 +28,7 @@ interface HoloVideoProps {
 const PLANE_HEIGHT = 5.6;
 const PLANE_WIDTH = (PLANE_HEIGHT * 9) / 16;
 const HOLO_COLOR = '#00ffff';
+const PEDESTAL_HEIGHT = 1.25;
 
 const prefersSaveData = (): boolean =>
   typeof navigator !== 'undefined' &&
@@ -176,7 +177,12 @@ const HoloVideo: React.FC<HoloVideoProps> = ({ paused, soundOn, onSoundEnd }) =>
   const map = videoTexture ?? imageTexture;
 
   return (
-    <group position={[0, -0.5, -3]}>
+    // Raised on a pedestal so the projector base clears the laptop in front of it.
+    <group position={[0, PEDESTAL_HEIGHT - 0.5, -3]}>
+      <mesh position={[0, -PEDESTAL_HEIGHT / 2, 0]}>
+        <cylinderGeometry args={[0.45, 0.6, PEDESTAL_HEIGHT, 24]} />
+        <meshStandardMaterial color="#0b1120" metalness={0.9} roughness={0.3} />
+      </mesh>
       <mesh position={[0, 0.04, 0]} geometry={baseGeo}>
         <meshStandardMaterial color="#0f172a" metalness={0.9} roughness={0.2} />
       </mesh>
