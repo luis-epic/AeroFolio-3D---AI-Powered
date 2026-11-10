@@ -75,11 +75,20 @@ const HoloVideo: React.FC<HoloVideoProps> = ({ paused }) => {
 
   // Shown until the first video frame decodes, and permanently for visitors who
   // asked for reduced motion or data saving.
-  const imageTexture = useMemo(
-    () => loadImageTexture(showStill ? HERO_MEDIA.still : HERO_MEDIA.poster),
-    [showStill],
-  );
-  useEffect(() => () => imageTexture.dispose(), [imageTexture]);
+  //
+  // Loaded in an effect, never during render: TextureLoader.load() notifies
+  // three's loading manager synchronously, which updates the <Loader> fallback.
+  // Doing that mid-render restarts the suspended render, which loads again, and
+  // the scene never leaves its loading state.
+  const [imageTexture, setImageTexture] = useState<Texture | null>(null);
+  useEffect(() => {
+    const texture = loadImageTexture(showStill ? HERO_MEDIA.still : HERO_MEDIA.poster);
+    setImageTexture(texture);
+    return () => {
+      texture.dispose();
+      setImageTexture(null);
+    };
+  }, [showStill]);
 
   const edgeFade = useMemo(createEdgeFade, []);
   useEffect(() => () => edgeFade.dispose(), [edgeFade]);
@@ -153,18 +162,20 @@ const HoloVideo: React.FC<HoloVideoProps> = ({ paused }) => {
       </mesh>
 
       {/* Tilted back slightly so it faces the raised home camera. */}
-      <mesh position={[0, PLANE_HEIGHT / 2 + 0.1, 0]} rotation={[-0.2, 0, 0]}>
-        <planeGeometry args={[PLANE_WIDTH, PLANE_HEIGHT]} />
-        <meshBasicMaterial
-          key={map.uuid}
-          map={map}
-          alphaMap={edgeFade}
-          transparent
-          depthWrite={false}
-          toneMapped={false}
-          fog={false}
-        />
-      </mesh>
+      {map && (
+        <mesh position={[0, PLANE_HEIGHT / 2 + 0.1, 0]} rotation={[-0.2, 0, 0]}>
+          <planeGeometry args={[PLANE_WIDTH, PLANE_HEIGHT]} />
+          <meshBasicMaterial
+            key={map.uuid}
+            map={map}
+            alphaMap={edgeFade}
+            transparent
+            depthWrite={false}
+            toneMapped={false}
+            fog={false}
+          />
+        </mesh>
+      )}
 
       <Sparkles
         position={[0, PLANE_HEIGHT / 2, 0.1]}
