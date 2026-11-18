@@ -4,8 +4,9 @@ export type Language = 'en' | 'es' | 'zh';
 export const TRANSLATIONS = {
   en: {
     home: {
-      role: "Full Stack Creative Engineer",
-      description: "I build fast, polished web products and integrate generative AI into them. Open to freelance projects and full-time roles.",
+      role: "AI Systems Engineer & Creative Architect",
+      description: "I architect production LLM agents, RAG knowledge pipelines, and 60 FPS WebGL interfaces. Turning generative AI into fast, interactive products.",
+      pillars: ["Production LLM Agents", "RAG & NotebookLM Pipelines", "60 FPS WebGL"],
       cta: {
         sound: "Listen",
         mute: "Mute",
@@ -197,8 +198,9 @@ export const TRANSLATIONS = {
   },
   es: {
     home: {
-      role: "Ingeniero Creativo Full Stack",
-      description: "Construyo productos web rápidos y cuidados, e integro IA generativa en ellos. Disponible para proyectos freelance y puestos a tiempo completo.",
+      role: "Ingeniero Especialista en IA y Arquitectura Web",
+      description: "Diseño agentes LLM, pipelines RAG y experiencias WebGL de alto rendimiento en producción. Transformo la IA generativa en productos rápidos e interactivos.",
+      pillars: ["Agentes LLM en Producción", "Pipelines RAG y NotebookLM", "WebGL a 60 FPS"],
       cta: {
         sound: "Escuchar",
         mute: "Silenciar",
@@ -390,8 +392,9 @@ export const TRANSLATIONS = {
   },
   zh: {
     home: {
-      role: "全栈创意工程师",
-      description: "我打造快速、精致的 Web 产品，并将生成式 AI 融入其中。目前接受自由职业项目和全职机会。",
+      role: "AI 系统工程师与全栈架构师",
+      description: "专注于打造生产级 LLM 智能体、RAG 知识检索系统与 60 FPS WebGL 交互体验，将生成式 AI 转化为极速落地的数字产品。",
+      pillars: ["生产级 LLM 智能体", "RAG 与 NotebookLM 管道", "60 FPS WebGL"],
       cta: {
         sound: "播放声音",
         mute: "静音",

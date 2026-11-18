@@ -1,0 +1,23 @@
+User-agent: *
+Allow: /
+
+# Explicitly welcome AI search & retrieval engines (GEO)
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+Sitemap: https://aerofolio-3d.vercel.app/sitemap.xml

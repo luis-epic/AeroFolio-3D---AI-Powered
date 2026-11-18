@@ -1,0 +1,25 @@
+# Luis Martinez — AI Systems Engineer & Full Stack Creative Architect
+
+> Official portfolio and technical dossier for **Luis Martinez**, an AI Systems Engineer specializing in production Generative AI, LLM Agents, Retrieval-Augmented Generation (RAG), Edge Computer Vision, and high-performance 3D WebGL applications.
+
+- Website: https://aerofolio-3d.vercel.app/
+- GitHub: https://github.com/luis-epic
+- LinkedIn: https://www.linkedin.com/in/luisepico/
+- Email: luismartinez.developer@gmail.com
+- Languages: English, Español, 中文
+
+## Core AI & Engineering Specializations
+- **Generative AI & Agentic Systems:** Multi-step LLM orchestration, tool calling, structured outputs, grounded RAG pipelines (Google Gemini API, NotebookLM-style knowledge indexing).
+- **Edge & Real-Time ML:** Quantized TensorFlow Lite computer vision pipelines running at 60 FPS on edge/IoT hardware with 75% model footprint reduction.
+- **Spatial Web & Frontend Architecture:** React, TypeScript, Next.js, Three.js / React Three Fiber (WebGL), instanced rendering, custom GLSL shaders, and Core Web Vitals optimization.
+- **Full-Stack & Data Infrastructure:** Node.js, FastAPI, Python, PostgreSQL, Supabase (Row Level Security), WebSockets.
+
+## Featured Production Systems
+- **AeroFolio 3D:** Spatial 3D portfolio merging WebGL with a Gemini-powered Neural Assistant capable of toggling between grounded NotebookLM knowledge-base retrieval and open general AI reasoning.
+- **Neural Vision Edge:** Serverless edge computer vision architecture performing 60 FPS object detection on IoT devices using custom quantization pipelines.
+- **EcoData Geospatial:** High-throughput telemetry dashboard rendering millions of real-time climate points via WebGL instancing and WebSockets.
+- **CryptoSentinel DeFi:** Automated smart contract security auditor predicting liquidity exploits from historical on-chain data.
+- **Royal Vision Suite:** Full-stack optical healthcare ERP managing clinical exams, automated scheduling, inventory, and real-time billing with PostgreSQL RLS.
+
+## Availability
+Open to senior roles and technical consulting in **AI Systems Engineering**, **LLM / RAG Product Architecture**, and **Creative Frontend Engineering**.

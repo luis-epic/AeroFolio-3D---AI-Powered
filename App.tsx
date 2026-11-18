@@ -68,7 +68,8 @@ const AppContent: React.FC = () => {
     const disarm = () => events.forEach((name) => window.removeEventListener(name, onFirstGesture, true));
     const onFirstGesture = (event: Event) => {
       disarm();
-      const onSoundToggle = event.target instanceof Element && event.target.closest('[data-sound-toggle]');
+      const onSoundToggle =
+        event.target instanceof Element && event.target.closest('[data-sound-toggle], [data-video-control]');
       if (!onSoundToggle && !soundOnRef.current && !heroEndedRef.current) startSound();
     };
 

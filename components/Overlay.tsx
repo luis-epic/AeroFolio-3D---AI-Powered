@@ -412,6 +412,7 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
         soundOn={soundOn}
         heroEnded={heroEnded}
         onToggleSound={onToggleSound}
+        liteMode={liteMode}
       />
       <div className="absolute top-8 right-6 md:right-8 z-50 flex items-center gap-2">
         <ViewToggle liteMode={liteMode} onToggle={onToggleLiteMode} labels={t.home.cta} />
