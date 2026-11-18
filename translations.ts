@@ -63,11 +63,28 @@ export const TRANSLATIONS = {
       send: "Send",
       initialMessage: "Hello! I'm the AI assistant for this portfolio. Ask me about Luis's skills, experience, or favorite tech stack.",
       quickQuestions: [
+        "What notes do you have in NotebookLM?",
+        "Explain your Software Architecture notes",
         "What is your tech stack?",
-        "Tell me about your experience",
-        "Why should I hire you?",
-        "Do you know Three.js?"
-      ]
+        "How do you build with Three.js & AI?"
+      ],
+      knowledgeMode: {
+        active: "Knowledge-Base-Aware",
+        inactive: "General AI Mode",
+        tooltip: "Toggle active NotebookLM knowledge base grounding",
+        statusActive: "NOTEBOOKLM: ACTIVE // GROUNDED",
+        statusInactive: "GENERAL AI MODE // UNGROUNDED",
+        badge: "NotebookLM Synced",
+        switchedToActive: "[SYSTEM]: Neural Assistant synchronized with NotebookLM Knowledge Vault (5 notebooks active).",
+        switchedToInactive: "[SYSTEM]: Switched to General AI Mode. Responses are now open and ungrounded.",
+        initializing: "INITIALIZING CONNECTION...",
+        initialized: "CONNECTION INITIALIZED // VAULT READY",
+        podsSynced: "5 Notebooks Synced",
+        floatingTitle: "Knowledge-Base-Aware",
+        floatingSubtitle: "NotebookLM Grounding",
+        openAssistant: "Open Neural Assistant",
+        notebooksListTitle: "Connected Knowledge Pods"
+      }
     },
     contact: {
       title: "Let's Connect",
@@ -76,10 +93,79 @@ export const TRANSLATIONS = {
       linkedin: "LinkedIn Profile",
       github: "GitHub Profile"
     },
+    library: {
+      title: "Cyber Archive // Knowledge Base",
+      subtitle: "Curated engineering readings, system architecture papers, and 3D graphics research.",
+      filterAll: "All Files",
+      filterArch: "Systems & Architecture",
+      filter3D: "3D & Creative Web",
+      filterAI: "Generative AI & LLMs",
+      filterUI: "UI & Product Engineering",
+      readLink: "Explore Resource",
+      statusReading: "Archived & Verified",
+      items: [
+        {
+          id: 0,
+          title: "Designing Data-Intensive Applications",
+          author: "Martin Kleppmann",
+          category: "Systems & Architecture",
+          tag: "Distributed Systems, Consistency, Storage Engines",
+          year: "Foundational",
+          description: "The gold standard for understanding reliability, scalability, and maintainability in high-load data architectures.",
+          takeaway: "Mastering storage formats, replication logs, and consensus guarantees when designing distributed services.",
+          link: "https://dataintensive.net/"
+        },
+        {
+          id: 1,
+          title: "Real-Time Rendering (Fourth Edition)",
+          author: "Tomas Akenine-Möller et al.",
+          category: "3D & Creative Web",
+          tag: "WebGL, Shaders, PBR, Spatial Math",
+          year: "Industry Bible",
+          description: "Comprehensive mathematical and algorithmic reference for modern real-time computer graphics pipelines.",
+          takeaway: "Physically based lighting models, GPU rasterization math, and low-latency post-processing techniques.",
+          link: "https://www.realtimerendering.com/"
+        },
+        {
+          id: 2,
+          title: "Generative AI Architecture & LLM Agents",
+          author: "Vaswani et al. / Research Papers",
+          category: "Generative AI & LLMs",
+          tag: "Transformers, Attention, Multimodal, Latency",
+          year: "Contemporary",
+          description: "Curated collection of core papers behind modern transformer architectures, streaming tokenizers, and multimodal context windows.",
+          takeaway: "Engineering robust client-server pipelines with low-latency streaming and tool-calling agent loops.",
+          link: "https://arxiv.org/abs/1706.03762"
+        },
+        {
+          id: 3,
+          title: "Clean Architecture & Frontend Modularity",
+          author: "Robert C. Martin / Modern Web Patterns",
+          category: "UI & Product Engineering",
+          tag: "TypeScript, State Decoupling, Microfrontends",
+          year: "Core Craft",
+          description: "Separation of concerns between application business logic, persistent data stores, and ephemeral view presentations.",
+          takeaway: "Building maintainable, testable UI architectures that scale without coupling framework dependencies.",
+          link: "https://blog.cleancoder.com/"
+        },
+        {
+          id: 4,
+          title: "Three.js & WebGL Shaders Masterclass",
+          author: "Creative Coding Archive",
+          category: "3D & Creative Web",
+          tag: "GLSL, Vertex Shaders, Post-processing, Math",
+          year: "Creative Tech",
+          description: "In-depth guide to writing custom GLSL fragment shaders, procedural noise generation, and GPU buffer optimizations.",
+          takeaway: "Crafting bespoke visual effects, holographic dispersion, and high-DPR 60 FPS spatial interactive web experiences.",
+          link: "https://threejs.org/docs/"
+        }
+      ]
+    },
     labels: {
       home: "HOME",
       projects: "PROJECTS",
       about: "ABOUT / AI",
+      library: "LIBRARY // ARCHIVE",
       contact: "CONTACT"
     },
     instructions: {
@@ -170,11 +256,28 @@ export const TRANSLATIONS = {
       send: "Enviar",
       initialMessage: "¡Hola! Soy el asistente IA de este portafolio. Pregúntame sobre las habilidades, experiencia o stack tecnológico de Luis.",
       quickQuestions: [
+        "¿Qué notas tienes en tus cuadernos de NotebookLM?",
+        "Explícame tus notas de Arquitectura de Software",
         "¿Cuál es tu stack tecnológico?",
-        "Háblame de tu experiencia",
-        "¿Por qué contratarte?",
-        "¿Sabes usar Three.js?"
-      ]
+        "¿Cómo integras Three.js con IA?"
+      ],
+      knowledgeMode: {
+        active: "Modo Conexión NotebookLM",
+        inactive: "Modo IA General",
+        tooltip: "Alternar consulta fundamentada en los cuadernos de NotebookLM",
+        statusActive: "NOTEBOOKLM: ACTIVO // FUNDAMENTADO",
+        statusInactive: "MODO IA GENERAL // SIN FUNDAMENTAR",
+        badge: "NotebookLM Conectado",
+        switchedToActive: "[SISTEMA]: Asistente sincronizado con la Bóveda de Cuadernos de NotebookLM (5 cuadernos activos).",
+        switchedToInactive: "[SISTEMA]: Modo IA General activado. Respuestas abiertas sin restringir a los cuadernos.",
+        initializing: "INICIALIZANDO CONEXIÓN...",
+        initialized: "CONEXIÓN INICIALIZADA // BÓVEDA LISTA",
+        podsSynced: "5 Cuadernos Sincronizados",
+        floatingTitle: "Modo Base de Conocimiento",
+        floatingSubtitle: "Fundamentación NotebookLM",
+        openAssistant: "Abrir Asistente Neuronal",
+        notebooksListTitle: "Cuadernos Conectados"
+      }
     },
     contact: {
       title: "Conectemos",
@@ -183,10 +286,79 @@ export const TRANSLATIONS = {
       linkedin: "Perfil LinkedIn",
       github: "Perfil GitHub"
     },
+    library: {
+      title: "Archivo Digital // Base de Conocimiento",
+      subtitle: "Lecturas seleccionadas de ingeniería, arquitectura de sistemas e investigación en gráficos 3D.",
+      filterAll: "Todos",
+      filterArch: "Sistemas y Arquitectura",
+      filter3D: "3D y Web Creativa",
+      filterAI: "IA Generativa y LLMs",
+      filterUI: "UI e Ingeniería de Producto",
+      readLink: "Explorar Recurso",
+      statusReading: "Archivado y Verificado",
+      items: [
+        {
+          id: 0,
+          title: "Designing Data-Intensive Applications",
+          author: "Martin Kleppmann",
+          category: "Sistemas y Arquitectura",
+          tag: "Sistemas Distribuidos, Consistencia, Storage Engines",
+          year: "Fundamental",
+          description: "La referencia de oro para comprender confiabilidad, escalabilidad y mantenimiento en arquitecturas de datos de alta carga.",
+          takeaway: "Dominio de formatos de almacenamiento, replicación y consenso al diseñar servicios distribuidos robustos.",
+          link: "https://dataintensive.net/"
+        },
+        {
+          id: 1,
+          title: "Real-Time Rendering (Cuarta Edición)",
+          author: "Tomas Akenine-Möller et al.",
+          category: "3D y Web Creativa",
+          tag: "WebGL, Shaders, PBR, Matemáticas Espaciales",
+          year: "Biblia de la Industria",
+          description: "Manual exhaustivo sobre los algoritmos matemáticos y pipelines modernos de gráficos por computadora en tiempo real.",
+          takeaway: "Modelos de iluminación física, rasterización en GPU y técnicas de post-procesamiento de baja latencia.",
+          link: "https://www.realtimerendering.com/"
+        },
+        {
+          id: 2,
+          title: "Arquitectura de IA Generativa y Agentes LLM",
+          author: "Vaswani et al. / Artículos de Investigación",
+          category: "IA Generativa y LLMs",
+          tag: "Transformers, Atención, Multimodal, Latencia",
+          year: "Contemporáneo",
+          description: "Compendio de investigaciones clave sobre arquitecturas transformer, tokenización en streaming y ventanas de contexto multimodal.",
+          takeaway: "Ingeniería de flujos cliente-servidor resilientes con streaming de baja latencia y bucles de agentes con tool-calling.",
+          link: "https://arxiv.org/abs/1706.03762"
+        },
+        {
+          id: 3,
+          title: "Clean Architecture y Modularidad en Frontend",
+          author: "Robert C. Martin / Patrones Web Modernos",
+          category: "UI e Ingeniería de Producto",
+          tag: "TypeScript, Desacoplamiento de Estado, Microfrontends",
+          year: "Buenas Prácticas",
+          description: "Separación estricta entre la lógica de negocio, almacenes de datos y la capa de presentación efímera de la interfaz.",
+          takeaway: "Construcción de arquitecturas de interfaz escalables y testables sin acoplar dependencias de frameworks.",
+          link: "https://blog.cleancoder.com/"
+        },
+        {
+          id: 4,
+          title: "Masterclass de Shaders Three.js y WebGL",
+          author: "Archivo de Creative Coding",
+          category: "3D y Web Creativa",
+          tag: "GLSL, Vertex Shaders, Post-procesamiento, Math",
+          year: "Tecnología Creativa",
+          description: "Guía práctica para escribir fragment shaders GLSL personalizados, generación de ruido procedural y optimización de buffers.",
+          takeaway: "Creación de efectos visuales a medida, dispersión holográfica y experiencias 3D interactivas a 60 FPS con alto DPR.",
+          link: "https://threejs.org/docs/"
+        }
+      ]
+    },
     labels: {
       home: "INICIO",
       projects: "PROYECTOS",
       about: "SOBRE MI / IA",
+      library: "BIBLIOTECA // ARCHIVO",
       contact: "CONTACTO"
     },
     instructions: {
@@ -277,11 +449,28 @@ export const TRANSLATIONS = {
       send: "发送",
       initialMessage: "您好！我是这个作品集的 AI 助手。您可以问我关于 Luis 的技能、经验或技术栈的问题。",
       quickQuestions: [
+        "你的 NotebookLM 笔记本记录了哪些知识？",
+        "介绍一下你在系统架构笔记中的核心要点",
         "你的技术栈是什么？",
-        "讲讲你的经验",
-        "为什么要录用你？",
-        "你会用 Three.js 吗？"
-      ]
+        "你如何将 Three.js 与生成式 AI 结合？"
+      ],
+      knowledgeMode: {
+        active: "NotebookLM 知识库模式",
+        inactive: "通用 AI 模式",
+        tooltip: "切换 NotebookLM 知识库检索增强",
+        statusActive: "NOTEBOOKLM: 已连接 // 知识库就绪",
+        statusInactive: "通用 AI 模式 // 开放对话",
+        badge: "NotebookLM 已同步",
+        switchedToActive: "[系统]: 神经助手已连接到 NotebookLM 知识档案（5 本笔记本已就绪）。",
+        switchedToInactive: "[系统]: 已切换至通用 AI 模式。回答将基于广泛知识而非特定笔记本。",
+        initializing: "正在初始化连接...",
+        initialized: "连接已就绪 // 知识档案已同步",
+        podsSynced: "已同步 5 本笔记本",
+        floatingTitle: "知识库感知模式",
+        floatingSubtitle: "NotebookLM 神经检索",
+        openAssistant: "打开神经助手",
+        notebooksListTitle: "已连接的知识笔记本"
+      }
     },
     contact: {
       title: "保持联系",
@@ -290,10 +479,79 @@ export const TRANSLATIONS = {
       linkedin: "领英主页",
       github: "GitHub 主页"
     },
+    library: {
+      title: "数字档案 // 知识库",
+      subtitle: "精选系统架构论文、3D 图形学研究及前端工程读物。",
+      filterAll: "全部文件",
+      filterArch: "系统与架构",
+      filter3D: "3D 与创意网络",
+      filterAI: "生成式 AI 与 LLM",
+      filterUI: "UI 与产品工程",
+      readLink: "探索资源",
+      statusReading: "已归档并验证",
+      items: [
+        {
+          id: 0,
+          title: "数据密集型应用系统设计 (DDIA)",
+          author: "Martin Kleppmann",
+          category: "系统与架构",
+          tag: "分布式系统, 一致性, 存储引擎",
+          year: "奠基之作",
+          description: "理解高负载数据架构中可靠性、可扩展性和可维护性的黄金标准。",
+          takeaway: "深入掌握存储格式、复制日志和共识算法以构建稳健的分布式服务。",
+          link: "https://dataintensive.net/"
+        },
+        {
+          id: 1,
+          title: "实时渲染 (Real-Time Rendering 第四版)",
+          author: "Tomas Akenine-Möller 等",
+          category: "3D 与创意网络",
+          tag: "WebGL, 着色器, PBR, 空间数学",
+          year: "行业经典",
+          description: "现代实时计算机图形管线数学与算法的权威指南。",
+          takeaway: "物理光照模型、GPU 光栅化数学与低延迟后处理技术。",
+          link: "https://www.realtimerendering.com/"
+        },
+        {
+          id: 2,
+          title: "生成式 AI 架构与大模型智能体",
+          author: "Vaswani 等 / 核心研究论文",
+          category: "生成式 AI 与 LLM",
+          tag: "Transformers, 注意力机制, 多模态, 流式传输",
+          year: "当代前沿",
+          description: "现代 Transformer 架构、流式分词及多模态长上下文的核心论文集。",
+          takeaway: "构建具有低延迟流式响应和工具调用 Agent 循环的高可用客户端-服务器管线。",
+          link: "https://arxiv.org/abs/1706.03762"
+        },
+        {
+          id: 3,
+          title: "整洁架构与前端模块化 (Clean Architecture)",
+          author: "Robert C. Martin / 现代 Web 模式",
+          category: "UI 与产品工程",
+          tag: "TypeScript, 状态解耦, 微前端",
+          year: "工程规范",
+          description: "核心业务逻辑、持久化存储与视图层展示之间的清晰解耦。",
+          takeaway: "构建无需强绑定特定前端框架的高内聚、可测试的扩展架构。",
+          link: "https://blog.cleancoder.com/"
+        },
+        {
+          id: 4,
+          title: "Three.js 与 WebGL 着色器精粹",
+          author: "创意编程文献库",
+          category: "3D 与创意网络",
+          tag: "GLSL, 顶点着色器, 后处理, 过程噪声",
+          year: "创意科技",
+          description: "编写定制 GLSL 片段着色器、过程化噪声生成与 GPU 缓冲优化的实践指南。",
+          takeaway: "实现全息色散、空间光效及高 DPI 60 FPS 的流畅沉浸式 3D Web 体验。",
+          link: "https://threejs.org/docs/"
+        }
+      ]
+    },
     labels: {
       home: "首页",
       projects: "项目",
       about: "关于 / AI",
+      library: "数字档案",
       contact: "联系方式"
     },
     instructions: {

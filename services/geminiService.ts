@@ -32,11 +32,15 @@ const REQUEST_TIMEOUT_MS = 30_000
 /**
  * Sends a prompt to the AI assistant.
  *
- * Resolves with the assistant's reply. On failure it resolves with a friendly,
- * localized message rather than throwing, so the UI degrades gracefully and the
- * rest of the portfolio keeps working even when the AI is down.
+ * Resolves with the assistant's reply. When knowledgeMode is true, it routes with
+ * full NotebookLM grounding, and can query the local vault if the backend is unreachable.
+ * When knowledgeMode is false, it runs in General AI mode.
  */
-export const generateAIResponse = async (prompt: string, language: Language = "en"): Promise<string> => {
+export const generateAIResponse = async (
+  prompt: string,
+  language: Language = "en",
+  knowledgeMode: boolean = true
+): Promise<string> => {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
 
@@ -44,19 +48,29 @@ export const generateAIResponse = async (prompt: string, language: Language = "e
     const response = await fetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt, language }),
+      body: JSON.stringify({ prompt, language, knowledgeMode }),
       signal: controller.signal,
     })
 
     const data = (await response.json().catch(() => null)) as { text?: string; error?: string } | null
 
     if (!response.ok) {
+      if (knowledgeMode) {
+        const { queryKnowledgeVault } = await import("../data/knowledgeVault")
+        const vaultAnswer = queryKnowledgeVault(prompt, language)
+        if (vaultAnswer) return vaultAnswer
+      }
       return data?.error || FALLBACK_ERROR[language]
     }
 
     return data?.text || FALLBACK_ERROR[language]
   } catch {
-    // Aborted requests and offline clients both land here.
+    // If serverless is offline or local dev, consult the NotebookLM Knowledge Vault if enabled
+    if (knowledgeMode) {
+      const { queryKnowledgeVault } = await import("../data/knowledgeVault")
+      const vaultAnswer = queryKnowledgeVault(prompt, language)
+      if (vaultAnswer) return vaultAnswer
+    }
     return NETWORK_ERROR[language]
   } finally {
     clearTimeout(timeout)

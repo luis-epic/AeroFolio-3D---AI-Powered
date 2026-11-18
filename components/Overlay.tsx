@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Section, ChatMessage } from '../types';
 import { generateAIResponse } from '../services/geminiService';
@@ -7,13 +7,15 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { Language } from '../translations';
 import { playHoverSound, playClickSound, duckAmbient, unduckAmbient } from '../utils/soundEngine';
 import { fetchGitHubProfile, type GitHubProfile, type GitHubFailureReason } from '../services/githubService';
-import { Box, Mic, Volume2, VolumeX, Zap } from 'lucide-react';
+import { Box, Mic, Volume2, VolumeX, Zap, BrainCircuit, Sparkles } from 'lucide-react';
 import Navigation from './overlay/Navigation';
 import StatsWidget from './overlay/StatsWidget';
 import Hero from './overlay/Hero';
 import ScrambleText from './overlay/ScrambleText';
 import ContactLinks from './overlay/ContactLinks';
-import { Projects } from './Projects';
+
+const Projects = lazy(() => import('./Projects').then((m) => ({ default: m.Projects })));
+const LibraryModal = lazy(() => import('./overlay/LibraryModal').then((m) => ({ default: m.LibraryModal })));
 
 interface OverlayProps {
   activeSection: Section;
@@ -196,6 +198,7 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
   const [prompt, setPrompt] = useState("");
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [isTyping, setIsTyping] = useState(false);
+  const [knowledgeMode, setKnowledgeMode] = useState(true);
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
   // GitHub Data State. `loading` is tracked separately from failure so the
@@ -234,9 +237,11 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
     return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
   }, []);
 
-  // Fetch GitHub Data on Mount (Global)
+  // Defer GitHub fetch until the user opens a profile-aware section so it doesn't compete with initial hero/WebGL load
   useEffect(() => {
-  let cancelled = false;
+    if (githubData || githubError) return;
+    if (activeSection !== 'about' && activeSection !== 'contact') return;
+    let cancelled = false;
     fetchGitHubProfile('luis-epic').then(result => {
       if (cancelled) return;
       if (result.status === 'success') {
@@ -247,7 +252,7 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
       }
     });
     return () => { cancelled = true; };
-  }, []);
+  }, [activeSection, githubData, githubError]);
 
   // Reset chat on language change
   useEffect(() => {
@@ -292,7 +297,7 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
     window.speechSynthesis.speak(utterance);
   };
 
-  const processMessage = async (text: string) => {
+  const processMessage = async (text: string, overrideKnowledgeMode?: boolean) => {
     if (!text.trim()) return;
     if (typeof window !== 'undefined' && window.speechSynthesis) {
         window.speechSynthesis.cancel();
@@ -303,13 +308,26 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
     
     setIsTyping(true);
     
-    const responseText = await generateAIResponse(text, language);
+    const activeMode = overrideKnowledgeMode !== undefined ? overrideKnowledgeMode : knowledgeMode;
+    const responseText = await generateAIResponse(text, language, activeMode);
     
     setChatHistory(prev => [...prev, { role: 'model', text: responseText }]);
     
     setIsTyping(false);
     
     speakText(responseText);
+  };
+
+  const handleToggleKnowledgeMode = () => {
+    playClickSound();
+    setKnowledgeMode(prev => {
+      const next = !prev;
+      const notice = next
+        ? t.about.knowledgeMode.switchedToActive
+        : t.about.knowledgeMode.switchedToInactive;
+      setChatHistory(curr => [...curr, { role: 'model', text: notice }]);
+      return next;
+    });
   };
 
   const handleSendMessage = async (e: React.FormEvent) => {
@@ -321,6 +339,14 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
   const handleQuickQuestion = (question: string) => {
     playClickSound();
     processMessage(question);
+  };
+
+  const handleAskAIFromLibrary = (notebookPrompt: string) => {
+    setActiveSection('about');
+    if (!knowledgeMode) {
+      setKnowledgeMode(true);
+    }
+    processMessage(notebookPrompt, true);
   };
 
   const toggleLanguage = () => {
@@ -377,8 +403,8 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
     <>
       <CustomCursor />
       
-      {/* Background Dimmer (Focus Visual) */}
-      <div className={`absolute inset-0 bg-black/60 backdrop-blur-[2px] z-10 transition-opacity duration-700 pointer-events-none ${visible ? 'opacity-100' : 'opacity-0'}`} />
+      {/* Background Dimmer (Focus Visual — solid tint avoids full-screen backdrop blur stall over WebGL) */}
+      <div className={`absolute inset-0 bg-black/70 z-10 transition-opacity duration-500 pointer-events-none ${visible ? 'opacity-100' : 'opacity-0'}`} />
 
       <Hero
         hidden={activeSection !== 'home'}
@@ -400,11 +426,11 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
       />
 
       <div 
-        className={`absolute inset-0 z-20 flex items-center justify-center pt-20 pb-28 transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${visible ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none filter blur-sm'}`}
+        className={`absolute inset-0 z-20 flex items-center justify-center pt-20 pb-28 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${visible ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'}`}
       >
         <div className="relative w-full max-w-5xl h-full max-h-[720px] flex flex-col px-4 md:px-10">
           
-          <div className="flex-1 bg-glass-dark backdrop-blur-3xl border border-glass-border rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col md:flex-row relative group">
+          <div className="flex-1 bg-[#07090f]/95 border border-glass-border rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.65)] overflow-hidden flex flex-col md:flex-row relative group">
             
             {/* Window Controls Decoration */}
             <div className="absolute top-4 left-4 flex gap-2 z-50">
@@ -443,11 +469,13 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
                 
                 {/* Projects carousel */}
                 <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
-                  <Projects 
-                    items={t.projects.items}
-                    playClickSound={playClickSound}
-                    playHoverSound={playHoverSound}
-                  />
+                  <Suspense fallback={<div className="flex-1 flex items-center justify-center text-cyan-400/70 font-mono text-xs">Loading projects...</div>}>
+                    <Projects 
+                      items={t.projects.items}
+                      playClickSound={playClickSound}
+                      playHoverSound={playHoverSound}
+                    />
+                  </Suspense>
                 </div>
               </motion.div>
             )}
@@ -464,7 +492,7 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
                 {/* Right/Bottom Side: Terminal Chat (Takes remaining space) */}
                 <div className="flex-1 min-w-0 min-h-0 flex flex-col relative order-2 md:order-1">
                   {/* Header HUD */}
-                  <div className={`${PANEL_HEADER_CLASS} from-pink-500/10 via-pink-500/5 to-transparent flex justify-between items-center gap-3`}>
+                  <div className={`${PANEL_HEADER_CLASS} from-pink-500/10 via-pink-500/5 to-transparent flex flex-wrap justify-between items-center gap-3`}>
                     <div>
                       <h2 className={`${PANEL_TITLE_CLASS} text-pink-400`}>
                          <span className="w-2 h-2 bg-pink-500 animate-pulse rounded-full shadow-[0_0_8px_#ec4899]"></span>
@@ -472,23 +500,117 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
                       </h2>
                       <p className={`${PANEL_SUBTITLE_CLASS} text-pink-300/60`}>{t.about.subtitle}</p>
                     </div>
-                    <button 
-                      onClick={() => {
-                         playClickSound();
-                         setIsMuted(!isMuted);
-                         if (!isMuted && typeof window !== 'undefined' && window.speechSynthesis) {
-                            window.speechSynthesis.cancel();
-                         }
-                      }}
-                      onMouseEnter={playHoverSound}
-                      className={`p-2 rounded-lg border border-white/10 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-400 ${isMuted ? 'bg-transparent text-gray-500' : 'bg-pink-500/20 text-pink-300 border-pink-500/50 shadow-[0_0_10px_rgba(236,72,153,0.3)]'}`}
-                      aria-label={isMuted ? 'Unmute assistant voice' : 'Mute assistant voice'}
-                      aria-pressed={!isMuted}
-                    >
-                       {isMuted
-                         ? <VolumeX aria-hidden="true" className="w-4 h-4" />
-                         : <Volume2 aria-hidden="true" className="w-4 h-4" />}
-                    </button>
+                    <div className="flex items-center gap-2">
+                      {/* NotebookLM Grounding Toggle & Status Badge */}
+                      <button 
+                        type="button"
+                        onClick={handleToggleKnowledgeMode}
+                        onMouseEnter={playHoverSound}
+                        title={t.about.knowledgeMode.tooltip}
+                        aria-pressed={knowledgeMode}
+                        className={`group relative flex items-center gap-2 px-2.5 py-1.5 rounded-lg border text-xs font-mono transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-400 ${
+                          knowledgeMode
+                            ? 'bg-emerald-950/40 border-emerald-500/50 text-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.25)] hover:border-emerald-400'
+                            : 'bg-white/5 border-white/10 text-gray-400 hover:text-gray-200 hover:border-white/20'
+                        }`}
+                      >
+                        {/* Status Beacon / Pulse Indicator */}
+                        <span className="relative flex h-2 w-2 shrink-0">
+                          {knowledgeMode && (
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                          )}
+                          <span className={`relative inline-flex rounded-full h-2 w-2 transition-colors duration-300 ${
+                            knowledgeMode ? 'bg-emerald-400 shadow-[0_0_6px_#34d399]' : 'bg-gray-500'
+                          }`}></span>
+                        </span>
+
+                        {/* Icon & Label */}
+                        <span className="flex items-center gap-1.5 font-medium tracking-wide">
+                          {knowledgeMode ? (
+                            <BrainCircuit className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                          ) : (
+                            <Sparkles className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                          )}
+                          <span className="hidden sm:inline">
+                            {knowledgeMode ? t.about.knowledgeMode.active : t.about.knowledgeMode.inactive}
+                          </span>
+                          <span className="sm:hidden">
+                            {knowledgeMode ? 'NotebookLM' : 'General'}
+                          </span>
+                        </span>
+
+                        {/* Interactive Cyber Switch Track & Slider Knob */}
+                        <div className={`w-7 h-4 flex items-center rounded-full p-0.5 transition-colors duration-300 ml-0.5 ${
+                          knowledgeMode ? 'bg-emerald-500/30 border border-emerald-400/50' : 'bg-white/10 border border-white/20'
+                        }`}>
+                          <motion.div 
+                            layout 
+                            transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                            className={`w-2.5 h-2.5 rounded-full transition-transform ${
+                              knowledgeMode 
+                                ? 'bg-emerald-400 translate-x-3 shadow-[0_0_6px_#34d399]' 
+                                : 'bg-gray-400 translate-x-0'
+                            }`}
+                          />
+                        </div>
+                      </button>
+
+                      {/* Voice Mute Button */}
+                      <button 
+                        onClick={() => {
+                           playClickSound();
+                           setIsMuted(!isMuted);
+                           if (!isMuted && typeof window !== 'undefined' && window.speechSynthesis) {
+                              window.speechSynthesis.cancel();
+                           }
+                        }}
+                        onMouseEnter={playHoverSound}
+                        className={`p-2 rounded-lg border border-white/10 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink-400 ${isMuted ? 'bg-transparent text-gray-500' : 'bg-pink-500/20 text-pink-300 border-pink-500/50 shadow-[0_0_10px_rgba(236,72,153,0.3)]'}`}
+                        aria-label={isMuted ? 'Unmute assistant voice' : 'Mute assistant voice'}
+                        aria-pressed={!isMuted}
+                      >
+                         {isMuted
+                           ? <VolumeX aria-hidden="true" className="w-4 h-4" />
+                           : <Volume2 aria-hidden="true" className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {/* Knowledge Base Status Bar */}
+                  <div className={`px-4 py-1.5 border-b text-[10px] font-mono tracking-wider flex items-center justify-between transition-colors duration-300 ${
+                    knowledgeMode 
+                      ? 'bg-emerald-950/30 border-emerald-500/20 text-emerald-300/90' 
+                      : 'bg-white/[0.02] border-white/5 text-gray-400'
+                  }`}>
+                    <div className="flex items-center gap-2">
+                      <span className="relative flex h-1.5 w-1.5">
+                        {knowledgeMode && (
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        )}
+                        <span className={`inline-flex rounded-full h-1.5 w-1.5 ${knowledgeMode ? 'bg-emerald-400 shadow-[0_0_6px_#34d399]' : 'bg-gray-500'}`}></span>
+                      </span>
+                      <span className="font-semibold tracking-wider">
+                        {knowledgeMode ? t.about.knowledgeMode.statusActive : t.about.knowledgeMode.statusInactive}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span className={`px-1.5 py-0.5 rounded text-[9px] uppercase tracking-wider border ${
+                        knowledgeMode 
+                          ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' 
+                          : 'bg-white/5 border-white/10 text-gray-400'
+                      }`}>
+                        {knowledgeMode ? '5 Notebooks Synced' : 'General Mode'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setActiveSection('library')}
+                        onMouseEnter={playHoverSound}
+                        className="text-pink-400 hover:text-pink-300 underline underline-offset-2 hidden sm:inline transition-colors text-[9px]"
+                      >
+                        {t.library.title.split('//')[0].trim()} →
+                      </button>
+                    </div>
                   </div>
                   
                   {/* Terminal Output (Chat) */}
@@ -674,6 +796,34 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
                   </div>
                 </div>
 
+              </motion.div>
+            )}
+
+            {/* --- CYBER LIBRARY / KNOWLEDGE BASE VIEW --- */}
+            {activeSection === 'library' && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
+                className="flex flex-col w-full h-full p-4 md:p-6"
+              >
+                <Suspense fallback={<div className="flex-1 flex items-center justify-center text-cyan-400/70 font-mono text-xs">Loading knowledge archive...</div>}>
+                  <LibraryModal
+                    title={t.library.title}
+                    subtitle={t.library.subtitle}
+                    items={t.library.items}
+                    filterLabels={{
+                      all: t.library.filterAll,
+                      arch: t.library.filterArch,
+                      threeD: t.library.filter3D,
+                      ai: t.library.filterAI,
+                      ui: t.library.filterUI,
+                    }}
+                    readLinkLabel={t.library.readLink}
+                    statusLabel={t.library.statusReading}
+                    onAskAI={handleAskAIFromLibrary}
+                  />
+                </Suspense>
               </motion.div>
             )}
 

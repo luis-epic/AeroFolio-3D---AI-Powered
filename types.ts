@@ -1,4 +1,4 @@
-export type Section = 'home' | 'about' | 'projects' | 'contact';
+export type Section = 'home' | 'about' | 'projects' | 'library' | 'contact';
 
 export interface CameraTarget {
   position: [number, number, number];
@@ -10,6 +10,18 @@ export interface ProjectData {
   title: string;
   tech: string;
   description: string;
+  link?: string;
+}
+
+export interface LibraryItem {
+  id: number;
+  title: string;
+  author: string;
+  category: string;
+  tag: string;
+  year?: string;
+  description: string;
+  takeaway: string;
   link?: string;
 }
 

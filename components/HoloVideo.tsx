@@ -26,16 +26,16 @@ interface HoloVideoProps {
   onEnded: () => void;
 }
 
-// The clip is portrait (9:16); the plane keeps that ratio so the whole frame,
-// and with it the whole presentation, name, and UI elements, are fully visible.
+// Expanded lateral width gives the holographic projection a wide, commanding cinematic presence
+// across the scene, allowing all elements, diagrams, and telemetry to breathe horizontally.
 const PLANE_HEIGHT = 6.0;
-const PLANE_WIDTH = (PLANE_HEIGHT * 9) / 16;
+const PLANE_WIDTH = 4.6; // Expands lateral field by ~36% (from 3.375 to 4.6)
 const HOLO_COLOR = '#00ffff';
 
 // The emitter floats high enough that, seen from the home camera, it clears
 // the laptop in front of it and the row of labels above the desk objects.
 const EMITTER_Y = 1.35;
-const EMITTER_RADIUS = 1.15;
+const EMITTER_RADIUS = 1.3;
 const BEAM_HEIGHT = 1;
 const SCAN_HEIGHT = 0.7;
 const SCAN_PERIOD = 5;
@@ -61,7 +61,7 @@ const createGradientTexture = (
 // Feathers the lateral edges softly so the video doesn't have harsh cut-off borders against the dark 3D scene,
 // while keeping 100% solid opacity across the engineer's name ("ING. LUIS MARTÍNEZ") and HUD graphics.
 const createEdgeFade = (): CanvasTexture =>
-  createGradientTexture(256, 512, (ctx, canvas) => {
+  createGradientTexture(128, 256, (ctx, canvas) => {
     const imgData = ctx.createImageData(canvas.width, canvas.height);
     const data = imgData.data;
     const w = canvas.width;
@@ -86,14 +86,14 @@ const createEdgeFade = (): CanvasTexture =>
         const u = x / (w - 1); // 0 at left, 1 at right
 
         // Horizontal feathering:
-        // Left: smooth 6.5% Hermite roll-off eliminating the rectangular slate seam
-        // Right: full 1.0 opacity up to 0.956 protecting the full text of 'ING. LUIS MARTÍNEZ',
+        // Left: smooth 3.5% Hermite roll-off eliminating the edge seam
+        // Right: full 1.0 opacity up to 0.968 (protecting 'ING. LUIS MARTÍNEZ' and all presentation elements),
         // followed by a smooth roll-off to 0 at 1.000 eliminating the right seam
         let fadeX = 1.0;
-        if (u < 0.065) {
-          fadeX = smoothstep(0.0, 0.065, u);
-        } else if (u > 0.956) {
-          fadeX = 1.0 - smoothstep(0.956, 1.0, u);
+        if (u < 0.035) {
+          fadeX = smoothstep(0.0, 0.035, u);
+        } else if (u > 0.968) {
+          fadeX = 1.0 - smoothstep(0.968, 1.0, u);
         }
 
         const alpha = Math.round(fadeX * fadeY * 255);
@@ -205,17 +205,18 @@ const HoloVideo: React.FC<HoloVideoProps> = ({ paused, soundOn, onSoundEnd, onEn
   useEffect(() => {
     if (showStill) return;
 
+    const useMobileClip = typeof window !== 'undefined' && window.innerWidth < 768;
     const element = document.createElement('video');
-    element.dataset.clip = 'full';
-    // Always use the master 720x1280 3.4Mbps high-definition clip for pristine visual quality
-    element.src = HERO_MEDIA.mp4;
+    element.dataset.clip = useMobileClip ? 'mobile' : 'full';
+    // Serve the compact 708KB clip on mobile until audio is requested, saving ~4.7MB on startup
+    element.src = useMobileClip ? HERO_MEDIA.mp4Mobile : HERO_MEDIA.mp4;
     element.crossOrigin = 'anonymous';
     element.muted = true;
     // Plays once. When it ends the texture keeps the last frame, so the
     // hologram rests on a final pose instead of starting over.
     element.loop = false;
     element.playsInline = true;
-    element.preload = 'auto';
+    element.preload = 'metadata';
 
     let texture: VideoTexture | null = null;
     const onReady = () => {
@@ -331,12 +332,12 @@ const HoloVideo: React.FC<HoloVideoProps> = ({ paused, soundOn, onSoundEnd, onEn
 
       {/* Light cone from the emitter up to the picture */}
       <mesh position={[0, BEAM_HEIGHT / 2, 0]}>
-        <cylinderGeometry args={[PLANE_WIDTH / 2, EMITTER_RADIUS * 0.85, BEAM_HEIGHT, 48, 1, true]} />
+        <cylinderGeometry args={[PLANE_WIDTH * 0.52, EMITTER_RADIUS * 0.85, BEAM_HEIGHT, 48, 1, true]} />
         <meshBasicMaterial
           color={HOLO_COLOR}
           alphaMap={beamFade}
           transparent
-          opacity={0.16}
+          opacity={0.18}
           side={DoubleSide}
           blending={AdditiveBlending}
           depthWrite={false}
@@ -347,11 +348,11 @@ const HoloVideo: React.FC<HoloVideoProps> = ({ paused, soundOn, onSoundEnd, onEn
 
       {/* Atmospheric holographic edge aura that softly diffuses video boundaries into the room */}
       <mesh position={[0, PLANE_HEIGHT / 2 + 0.1, -0.015]}>
-        <planeGeometry args={[PLANE_WIDTH * 1.18, PLANE_HEIGHT * 1.05]} />
+        <planeGeometry args={[PLANE_WIDTH * 1.25, PLANE_HEIGHT * 1.06]} />
         <meshBasicMaterial
           map={backGlowTexture}
           transparent
-          opacity={0.32}
+          opacity={0.36}
           blending={AdditiveBlending}
           depthWrite={false}
           toneMapped={false}
@@ -375,6 +376,32 @@ const HoloVideo: React.FC<HoloVideoProps> = ({ paused, soundOn, onSoundEnd, onEn
         </mesh>
       )}
 
+      {/* Lateral holographic aperture accents */}
+      <group position={[0, PLANE_HEIGHT / 2 + 0.1, 0.01]}>
+        <mesh position={[-PLANE_WIDTH / 2 - 0.08, 0, 0]}>
+          <planeGeometry args={[0.02, PLANE_HEIGHT * 0.65]} />
+          <meshBasicMaterial
+            color={HOLO_COLOR}
+            transparent
+            opacity={0.22}
+            blending={AdditiveBlending}
+            depthWrite={false}
+            toneMapped={false}
+          />
+        </mesh>
+        <mesh position={[PLANE_WIDTH / 2 + 0.08, 0, 0]}>
+          <planeGeometry args={[0.02, PLANE_HEIGHT * 0.65]} />
+          <meshBasicMaterial
+            color={HOLO_COLOR}
+            transparent
+            opacity={0.22}
+            blending={AdditiveBlending}
+            depthWrite={false}
+            toneMapped={false}
+          />
+        </mesh>
+      </group>
+
       {!prefersReducedMotion && (
         <mesh ref={scanRef} position={[0, 0.1 + SCAN_HEIGHT / 2, 0.02]}>
           <planeGeometry args={[PLANE_WIDTH * 0.98, SCAN_HEIGHT]} />
@@ -393,12 +420,12 @@ const HoloVideo: React.FC<HoloVideoProps> = ({ paused, soundOn, onSoundEnd, onEn
 
       <Sparkles
         position={[0, PLANE_HEIGHT / 2, 0.1]}
-        scale={[PLANE_WIDTH + 0.6, PLANE_HEIGHT, 0.6]}
-        count={24}
+        scale={[PLANE_WIDTH + 1.2, PLANE_HEIGHT, 0.8]}
+        count={32}
         speed={0.8}
         color={HOLO_COLOR}
         size={3}
-        opacity={0.5}
+        opacity={0.55}
         noise={0.5}
       />
     </group>

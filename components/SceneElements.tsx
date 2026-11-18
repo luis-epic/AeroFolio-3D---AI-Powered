@@ -1,10 +1,12 @@
 
 import React, { useRef, useState, useMemo, useEffect } from 'react';
-import { useFrame, ThreeElements } from '@react-three/fiber';
-import { Mesh, Group, Vector3, CylinderGeometry, TorusGeometry, BoxGeometry, PlaneGeometry, SphereGeometry, CircleGeometry, IcosahedronGeometry, OctahedronGeometry } from 'three';
+import { useFrame } from '@react-three/fiber';
+import { Mesh, Group, Vector3, CylinderGeometry, TorusGeometry, BoxGeometry, PlaneGeometry, SphereGeometry, CircleGeometry } from 'three';
 import { Text, Float, MeshTransmissionMaterial, RoundedBox, Billboard, Sparkles } from '@react-three/drei';
-import { useLanguage } from '../contexts/LanguageContext';
 import { playHoverSound, playClickSound, playTypeSound } from '../utils/soundEngine';
+
+const _brainScaleVec = new Vector3();
+const _phoneScaleVec = new Vector3();
 
 // Explicitly define JSX intrinsic elements for R3F and HTML to fix Typescript errors
 declare global {
@@ -236,8 +238,8 @@ interface LaptopProps {
 
 const TypewriterText = () => {
   const [displayedText, setDisplayedText] = useState("");
-  const [showCursor, setShowCursor] = useState(true);
-  const fullTextLines = [
+  const [done, setDone] = useState(false);
+  const fullText = useMemo(() => [
     "> initializing kernel...",
     "> loading portfolio_v3.0",
     "> [||||||||||] 100%",
@@ -251,29 +253,26 @@ const TypewriterText = () => {
     "};",
     "",
     "> ready for input"
-  ];
-  const fullText = fullTextLines.join('\n');
+  ].join('\n'), []);
 
   useEffect(() => {
     let index = 0;
     const interval = setInterval(() => {
       if (index <= fullText.length) {
         setDisplayedText(fullText.slice(0, index));
-        if (Math.random() > 0.6) playTypeSound(); 
+        if (Math.random() > 0.6) playTypeSound();
         index++;
-      } else clearInterval(interval);
-    }, 40);
+      } else {
+        setDone(true);
+        clearInterval(interval);
+      }
+    }, 45);
     return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    const cursorInterval = setInterval(() => setShowCursor(prev => !prev), 500);
-    return () => clearInterval(cursorInterval);
-  }, []);
+  }, [fullText]);
 
   return (
     <Text position={[-0.66, 0.4, 0.001]} anchorX="left" anchorY="top" fontSize={0.055} maxWidth={1.3} lineHeight={1.1} color="#4ade80">
-       {displayedText + (showCursor ? "_" : "")}
+       {displayedText + (done ? "" : "_")}
     </Text>
   );
 };
@@ -398,7 +397,6 @@ export const Brain: React.FC<BrainProps> = ({ onClick, active, label, visible = 
   const innerRef = useRef<Mesh>(null);
   const groupRef = useRef<Group>(null);
   const [hovered, setHover] = useState(false);
-  const vec = new Vector3();
   useHoverDispatcher(hovered);
 
   useFrame((state) => {
@@ -414,7 +412,7 @@ export const Brain: React.FC<BrainProps> = ({ onClick, active, label, visible = 
     }
     if (groupRef.current) {
       const targetScale = visible ? (hovered && !active ? 1.12 : 1) : 0;
-      groupRef.current.scale.lerp(vec.set(targetScale, targetScale, targetScale), 0.1);
+      groupRef.current.scale.lerp(_brainScaleVec.set(targetScale, targetScale, targetScale), 0.1);
     }
   });
 
@@ -423,17 +421,17 @@ export const Brain: React.FC<BrainProps> = ({ onClick, active, label, visible = 
       <Float speed={2} rotationIntensity={0.5} floatIntensity={0.5}>
         <mesh ref={meshRef}>
           <icosahedronGeometry args={[0.7, 0]} />
-          <MeshTransmissionMaterial 
-            backside={false} 
-            samples={1} // Lowest samples for max performance
+          <MeshTransmissionMaterial
+            backside={false}
+            samples={1}
             resolution={512}
-            thickness={0.2} 
-            chromaticAberration={0.1} 
-            anisotropy={0.1} 
-            distortion={0.1} 
-            distortionScale={0.1} 
-            temporalDistortion={0.1} 
-            color={active ? "#f472b6" : "#e2e8f0"} 
+            thickness={0.2}
+            chromaticAberration={0.1}
+            anisotropy={0.1}
+            distortion={0.1}
+            distortionScale={0.1}
+            temporalDistortion={0.1}
+            color={active ? "#f472b6" : "#e2e8f0"}
             roughness={0.1}
           />
         </mesh>
@@ -464,7 +462,6 @@ export const Smartphone: React.FC<SmartphoneProps> = ({ onClick, active, label, 
   const rootRef = useRef<Group>(null);
   const groupRef = useRef<Group>(null);
   const [hovered, setHover] = useState(false);
-  const vec = new Vector3();
   useHoverDispatcher(hovered);
 
   useFrame((state) => {
@@ -482,7 +479,7 @@ export const Smartphone: React.FC<SmartphoneProps> = ({ onClick, active, label, 
     }
     if (rootRef.current) {
       const targetScale = visible ? (hovered && !active ? 1.1 : 1) : 0;
-      rootRef.current.scale.lerp(vec.set(targetScale, targetScale, targetScale), 0.1);
+      rootRef.current.scale.lerp(_phoneScaleVec.set(targetScale, targetScale, targetScale), 0.1);
     }
   });
 

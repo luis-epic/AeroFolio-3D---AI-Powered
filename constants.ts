@@ -4,7 +4,7 @@ export const CAMERA_POSITIONS: Record<Section, CameraTarget> = {
   home: {
     // Aimed at the heart of the presentation so the wider hologram,
     // name, and holographic elements are comfortably centered in view.
-    position: [0, 3.2, 9.2],
+    position: [0, 3.1, 8.8],
     target: [0, 2.9, 0],
   },
   about: {
@@ -15,6 +15,11 @@ export const CAMERA_POSITIONS: Record<Section, CameraTarget> = {
     // Changed from frontal view to "User sitting at desk" view (Higher Y, Closer Z)
     position: [0, 1.6, 1.5], 
     target: [0, 0.5, -0.2], // Look at center of screen (was 0.2)
+  },
+  library: {
+    // Focus on CyberLibrary (Dual-bay cyber archive rack + side control console)
+    position: [-1.55, 1.7, 2.35],
+    target: [-3.45, 1.15, -0.95],
   },
   contact: {
     position: [2, 1.8, 3], // Higher Y to see full phone

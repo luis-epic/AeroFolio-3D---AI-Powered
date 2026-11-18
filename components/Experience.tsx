@@ -1,12 +1,14 @@
 
-import React, { useEffect, useRef, useState, useMemo } from 'react';
-import { useThree, ThreeElements } from '@react-three/fiber';
+import React, { useEffect, useRef, useState } from 'react';
+import { useThree } from '@react-three/fiber';
 import { Vector2 } from 'three';
-import { CameraControls, Environment, MeshReflectorMaterial, ContactShadows, BakeShadows, Preload, AdaptiveEvents } from '@react-three/drei';
+import { CameraControls, Environment, Lightformer, ContactShadows, BakeShadows, Preload, AdaptiveEvents } from '@react-three/drei';
 import { EffectComposer, Bloom, Vignette, Glitch } from '@react-three/postprocessing';
 import CameraControlsImpl from 'camera-controls';
 import { Laptop, Brain, Smartphone, TechOrbit, ResumePaper, CoffeeMug } from './SceneElements';
 import HoloVideo from './HoloVideo';
+import StudioEnvironment from './StudioEnvironment';
+import CyberLibrary from './CyberLibrary';
 import Reveal from './Reveal';
 import { CAMERA_POSITIONS } from '../constants';
 import { Section } from '../types';
@@ -18,6 +20,7 @@ interface ExperienceProps {
     home: string;
     projects: string;
     about: string;
+    library: string;
     contact: string;
   };
   videoPaused: boolean;
@@ -46,6 +49,7 @@ const MOBILE_ADJUSTMENTS: Record<Section, { dy: number; dz: number; targetDy: nu
   home: { dy: 0.6, dz: 3.4, targetDy: 2.0 },
   projects: { dy: 0.5, dz: 3.5, targetDy: 0.1 }, // laptop is wide; needs the largest pullback
   about: { dy: 0, dz: 2.5, targetDy: 0.2 },
+  library: { dy: 0.2, dz: 2.2, targetDy: 0.2 },
   contact: { dy: 0, dz: 2.5, targetDy: 0.2 },
 };
 
@@ -161,11 +165,17 @@ const Experience: React.FC<ExperienceProps> = ({ activeSection, setActiveSection
 
   return (
     <>
-      {/* Environment & Background */}
-      <color attach="background" args={['#050505']} /> {/* Darker background for contrast */}
+      {/* Environment & Atmospheric Background */}
+      <color attach="background" args={['#010307']} />
       
-      <fog attach="fog" args={['#050505', 5, 25]} />
-      <Environment preset="city" background={false} environmentIntensity={0.3} />
+      <fog attach="fog" args={['#020409', 12, 55]} />
+      {/* Zero-network procedural studio environment map for crisp metallic reflections without external .hdr fetch */}
+      <Environment resolution={128} frames={1} environmentIntensity={0.45}>
+        <Lightformer form="rect" intensity={2.2} color="#e0f2fe" position={[0, 8, 2]} rotation={[Math.PI / 2, 0, 0]} scale={[14, 6, 1]} />
+        <Lightformer form="rect" intensity={1.6} color="#00f0ff" position={[-8, 3, -4]} rotation={[0, Math.PI / 3, 0]} scale={[8, 4, 1]} />
+        <Lightformer form="rect" intensity={1.4} color="#a855f7" position={[8, 3, -4]} rotation={[0, -Math.PI / 3, 0]} scale={[8, 4, 1]} />
+      </Environment>
+      <StudioEnvironment />
       
       <AdaptiveEvents />
       <BakeShadows />
@@ -220,31 +230,24 @@ const Experience: React.FC<ExperienceProps> = ({ activeSection, setActiveSection
       {/* Floating Desk Platform */}
       <group position={[0, -0.5, 0]}>
         
-        {/* Contact Shadows: Lowered resolution to 512 for better performance */}
+        {/* Contact Shadows: frames={1} bakes once instead of running 3 blur passes every frame */}
         <ContactShadows 
-            resolution={512} 
+            frames={1}
+            resolution={256} 
             scale={20} 
-            blur={2.5} 
+            blur={2.2} 
             opacity={0.5} 
             far={10} 
             color="#000000" 
         />
 
-          {/* Reflective Floor - Lowered resolution to 256 for performance */}
-        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]}>
+        {/* Sleek Dark Brushed-Metal Floor (avoids full second scene render pass per frame) */}
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]} receiveShadow>
           <planeGeometry args={[50, 50]} />
-          <MeshReflectorMaterial
-            blur={[300, 100]}
-            resolution={256}
-            mixBlur={1}
-            mixStrength={50} // Increased reflection strength
-            roughness={1}
-            depthScale={1.2}
-            minDepthThreshold={0.4}
-            maxDepthThreshold={1.4}
-            color="#050505"
-            metalness={0.6}
-            mirror={0.7}
+          <meshStandardMaterial
+            color="#05070d"
+            metalness={0.82}
+            roughness={0.28}
           />
         </mesh>
       </group>
@@ -283,6 +286,16 @@ const Experience: React.FC<ExperienceProps> = ({ activeSection, setActiveSection
           onClick={() => setActiveSection('contact')} 
           label={labels.contact}
           visible={activeSection === 'home' || activeSection === 'contact'} 
+        />
+      </Reveal>
+
+      {/* Cyber Library / Digital Archive Unit */}
+      <Reveal delay={1.0} origin={[-3.6, 1.4, -1.0]}>
+        <CyberLibrary
+          active={activeSection === 'library'}
+          onClick={() => setActiveSection('library')}
+          label={labels.library}
+          visible={activeSection === 'home' || activeSection === 'library'}
         />
       </Reveal>
 

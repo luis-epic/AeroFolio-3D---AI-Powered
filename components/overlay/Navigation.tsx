@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import { Section } from '../../types';
-import { House, Laptop, BrainCircuit, Smartphone, ChevronRight, type LucideIcon } from 'lucide-react';
+import { House, Laptop, BrainCircuit, BookOpen, Smartphone, ChevronRight, type LucideIcon } from 'lucide-react';
 import { playHoverSound, playClickSound } from '../../utils/soundEngine';
 
 interface NavigationProps {
@@ -18,6 +18,7 @@ const Navigation: React.FC<NavigationProps> = ({ activeSection, onNavigate, labe
     { id: 'home', label: labels.home, Icon: House },
     { id: 'projects', label: labels.projects, Icon: Laptop },
     { id: 'about', label: labels.about, Icon: BrainCircuit },
+    { id: 'library', label: labels.library, Icon: BookOpen },
     { id: 'contact', label: labels.contact, Icon: Smartphone },
   ];
 

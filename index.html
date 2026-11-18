@@ -91,13 +91,17 @@
     <!-- Preconnect and dns-prefetch for performance -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="dns-prefetch" href="https://fonts.googleapis.com">
-    <!-- GitHub profile data and avatars are fetched on load -->
-    <link rel="preconnect" href="https://api.github.com">
-    <link rel="dns-prefetch" href="https://avatars.githubusercontent.com">
     <link rel="preload" as="image" href="/hero/hero-poster.jpg">
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Non-render-blocking Google Fonts -->
+    <link
+      rel="preload"
+      as="style"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;600;700&display=swap"
+      onload="this.onload=null;this.rel='stylesheet'"
+    >
+    <noscript>
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
+    </noscript>
     
     <style>
       body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; overflow-x: hidden; max-width: 100%; background-color: #030305; font-family: 'Inter', sans-serif;}
@@ -158,6 +162,6 @@
 </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="./index.tsx"></script>
+    <script type="module" src="/index.tsx"></script>
   </body>
 </html>

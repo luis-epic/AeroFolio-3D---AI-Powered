@@ -65,20 +65,20 @@ const HeroVideo: React.FC<HeroVideoProps> = ({ paused, soundOn, onSoundEnd, onEn
     return () => document.removeEventListener('visibilitychange', sync);
   }, [paused, showStill, src, soundOn, onSoundEnd]);
 
-  // The source is portrait (9:16). Preserves the full aspect ratio with smooth holographic
+  // The source preserves wide presence with smooth holographic
   // lateral feathering so the presentation, name, and elements are 100% visible without harsh box edges.
   const frameClass = isSplit
-    ? 'absolute inset-y-0 right-0 md:right-[4%] lg:right-[8%] h-full aspect-[9/16] flex items-center justify-center'
-    : 'absolute inset-0 flex items-center justify-center p-4';
+    ? 'absolute inset-y-0 right-0 md:right-[2%] lg:right-[4%] h-full aspect-[11/16] flex items-center justify-center'
+    : 'absolute inset-0 flex items-center justify-center p-2';
   const mediaClass = isSplit
     ? 'h-full w-full object-contain drop-shadow-[0_0_35px_rgba(0,255,255,0.12)]'
-    : 'h-full max-h-screen w-auto max-w-full aspect-[9/16] object-contain drop-shadow-[0_0_40px_rgba(0,0,0,0.8)]';
+    : 'h-full max-h-screen w-auto max-w-full aspect-[11/16] object-contain drop-shadow-[0_0_40px_rgba(0,0,0,0.8)]';
 
   const lateralMaskStyle: React.CSSProperties = {
     WebkitMaskImage:
-      'linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.2) 1.5%, rgba(0,0,0,0.7) 3.5%, #000 6.5%, #000 95.6%, rgba(0,0,0,0.7) 97.5%, rgba(0,0,0,0.2) 99%, transparent 100%)',
+      'linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.2) 1%, rgba(0,0,0,0.7) 2.5%, #000 4%, #000 96.8%, rgba(0,0,0,0.7) 98%, rgba(0,0,0,0.2) 99.2%, transparent 100%)',
     maskImage:
-      'linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.2) 1.5%, rgba(0,0,0,0.7) 3.5%, #000 6.5%, #000 95.6%, rgba(0,0,0,0.7) 97.5%, rgba(0,0,0,0.2) 99%, transparent 100%)',
+      'linear-gradient(90deg, transparent 0%, rgba(0,0,0,0.2) 1%, rgba(0,0,0,0.7) 2.5%, #000 4%, #000 96.8%, rgba(0,0,0,0.7) 98%, rgba(0,0,0,0.2) 99.2%, transparent 100%)',
   };
 
   return (
