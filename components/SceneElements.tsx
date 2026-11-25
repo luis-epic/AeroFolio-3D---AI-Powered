@@ -4,6 +4,7 @@ import { useFrame } from '@react-three/fiber';
 import { Mesh, Group, Vector3, CylinderGeometry, TorusGeometry, BoxGeometry, PlaneGeometry, SphereGeometry, CircleGeometry } from 'three';
 import { Text, Float, MeshTransmissionMaterial, RoundedBox, Billboard, Sparkles } from '@react-three/drei';
 import { playHoverSound, playClickSound, playTypeSound } from '../utils/soundEngine';
+import SectionTitle3D from './SectionTitle3D';
 
 const _brainScaleVec = new Vector3();
 const _phoneScaleVec = new Vector3();
@@ -28,7 +29,15 @@ const useHoverDispatcher = (isHovered: boolean) => {
     }, [isHovered]);
 };
 
-export const ResumePaper: React.FC = () => {
+interface EditableSceneElementProps {
+  editMode?: boolean;
+  onSelectInEditMode?: () => void;
+}
+
+export const ResumePaper: React.FC<EditableSceneElementProps> = ({
+  editMode = false,
+  onSelectInEditMode,
+}) => {
   const [hovered, setHover] = useState(false);
   useHoverDispatcher(hovered);
 
@@ -50,15 +59,15 @@ export const ResumePaper: React.FC = () => {
   const handleClick = (e: any) => {
     e.stopPropagation();
     playClickSound();
-    // Simulate opening/downloading
+    if (editMode) {
+      onSelectInEditMode?.();
+      return;
+    }
     window.open('https://luismartinez.dev/cv.pdf', '_blank');
   };
 
   return (
-    <group 
-        position={[1.1, 0.4, 1.2]} 
-        rotation={[0, -0.4, 0]}
-    >
+    <group>
       <Float speed={1.5} rotationIntensity={0.2} floatIntensity={0.4}>
         <group 
           ref={liftRef}
@@ -94,7 +103,10 @@ const SparkleSteam = () => (
     </group>
 )
 
-export const CoffeeMug: React.FC = () => {
+export const CoffeeMug: React.FC<EditableSceneElementProps> = ({
+  editMode = false,
+  onSelectInEditMode,
+}) => {
   const [hovered, setHover] = useState(false);
   
   useHoverDispatcher(hovered);
@@ -115,14 +127,19 @@ export const CoffeeMug: React.FC = () => {
   });
 
   return (
-    <group 
-        position={[-1.1, 0.4, 1.2]} 
-        rotation={[0, 0.5, 0]}
-    >
-       <Float speed={2} rotationIntensity={0.5} floatIntensity={0.4}>
+    <group>
+       <Float speed={editMode ? 0 : 2} rotationIntensity={editMode ? 0 : 0.5} floatIntensity={editMode ? 0 : 0.4}>
         <group
           ref={mugRef}
-          onClick={(e) => { e.stopPropagation(); playClickSound(); spinTarget.current += Math.PI * 2; }}
+          onClick={(e) => {
+            e.stopPropagation();
+            playClickSound();
+            if (editMode) {
+              onSelectInEditMode?.();
+            } else {
+              spinTarget.current += Math.PI * 2;
+            }
+          }}
           onPointerOver={() => { setHover(true); playHoverSound(); }}
           onPointerOut={() => setHover(false)}
         >
@@ -189,12 +206,27 @@ const TechItem = ({ index, total, tech, active, parentHovered }: any) => {
       <Billboard follow={true} lockX={false} lockY={false} lockZ={false}>
         <Float speed={ active ? 2 : 0} rotationIntensity={0.2} floatIntensity={0.2}>
           <mesh position={[0, 0.15, 0]} geometry={sphereGeo}>
-            <meshStandardMaterial color="#1f2937" roughness={0.3} metalness={0.8} />
+            <meshStandardMaterial color="#334155" roughness={0.28} metalness={0.82} />
           </mesh>
           <mesh position={[0, 0.15, 0]} rotation={[Math.PI / 2, 0, 0]} geometry={ringGeo}>
             <meshBasicMaterial color={tech.color} toneMapped={false} />
           </mesh>
-          <Text position={[0, -0.1, 0]} fontSize={0.15} color={tech.color} anchorX="center" anchorY="top">
+          <Text
+            position={[0, -0.1, 0]}
+            fontSize={0.155}
+            fontWeight={700}
+            letterSpacing={0.08}
+            sdfGlyphSize={128}
+            color="#f8fafc"
+            strokeWidth={0.0035}
+            strokeColor={tech.color}
+            strokeOpacity={0.75}
+            outlineWidth={0.015}
+            outlineColor="#020617"
+            outlineBlur={0.006}
+            anchorX="center"
+            anchorY="top"
+          >
             {tech.label}
           </Text>
         </Float>
@@ -205,11 +237,11 @@ const TechItem = ({ index, total, tech, active, parentHovered }: any) => {
 
 export const TechOrbit: React.FC<TechOrbitProps> = ({ active, hovered }) => {
   const techs = useMemo(() => [
-    { label: "React", color: "#61dafb" },
-    { label: "TypeScript", color: "#3178c6" },
-    { label: "Next.js", color: "#ffffff" },
-    { label: "Three.js", color: "#F3F3F3" }, 
-    { label: "Gemini AI", color: "#8e75e8" },
+    { label: "React", color: "#67e8f9" },
+    { label: "TypeScript", color: "#60a5fa" },
+    { label: "Next.js", color: "#f8fafc" },
+    { label: "Three.js", color: "#fde047" },
+    { label: "Gemini AI", color: "#c084fc" },
   ], []);
 
   return (
@@ -234,6 +266,8 @@ interface LaptopProps {
   active: boolean;
   label: string;
   onHoverChange?: (isHovering: boolean) => void;
+  editMode?: boolean;
+  onSelectInEditMode?: () => void;
 }
 
 const TypewriterText = () => {
@@ -287,7 +321,14 @@ const TypewriterTerminal = () => (
   </group>
 );
 
-export const Laptop: React.FC<LaptopProps> = ({ onClick, active, label, onHoverChange }) => {
+export const Laptop: React.FC<LaptopProps> = ({
+  onClick,
+  active,
+  label,
+  onHoverChange,
+  editMode = false,
+  onSelectInEditMode,
+}) => {
   const groupRef = useRef<Group>(null);
   const screenRef = useRef<Group>(null);
   const [hovered, setHover] = useState(false);
@@ -318,8 +359,8 @@ export const Laptop: React.FC<LaptopProps> = ({ onClick, active, label, onHoverC
   useFrame((state) => {
     if (groupRef.current) {
       const t = state.clock.getElapsedTime();
-      groupRef.current.position.y = 0.1 + Math.sin(t * 0.5) * 0.005;
-      const scale = hovered && !active ? 1.06 : 1;
+      groupRef.current.position.y = editMode ? 0 : 0.45 + Math.sin(t * 0.5) * 0.005;
+      const scale = !editMode && hovered && !active ? 1.06 : 1;
       groupRef.current.scale.lerp(scaleTarget.set(scale, scale, scale), 0.12);
     }
     // The lid starts closed and eases to its angle, so it opens on load and
@@ -334,7 +375,20 @@ export const Laptop: React.FC<LaptopProps> = ({ onClick, active, label, onHoverC
   const glowColor = active ? "#3b82f6" : "#60a5fa";
 
   return (
-    <group ref={groupRef} onClick={(e) => { e.stopPropagation(); onClick(); playClickSound(); }} onPointerOver={handlePointerOver} onPointerOut={handlePointerOut}>
+    <group
+      ref={groupRef}
+      onClick={(e) => {
+        e.stopPropagation();
+        playClickSound();
+        if (editMode) {
+          onSelectInEditMode?.();
+        } else {
+          onClick();
+        }
+      }}
+      onPointerOver={handlePointerOver}
+      onPointerOut={handlePointerOut}
+    >
       <group position={[0, 0, 0]}>
         <mesh geometry={chassisGeo} position={[0, 0, 0]}>
             <meshStandardMaterial color={chassisColor} roughness={0.4} metalness={0.8} />
@@ -378,9 +432,14 @@ export const Laptop: React.FC<LaptopProps> = ({ onClick, active, label, onHoverC
         <mesh position={[0, 0.96, 0.024]}><boxGeometry args={[0.12, 0.02, 0.005]} /><meshBasicMaterial color="#0f172a" /></mesh>
         <mesh position={[0, 0.96, 0.025]}><circleGeometry args={[0.004, 16]} /><meshBasicMaterial color="#10b981" toneMapped={false} opacity={1} transparent /></mesh>
       </group>
-      <Text position={[0, LABEL_Y - 0.1, LABEL_Z]} fontSize={0.15} color="white" anchorX="center" anchorY="middle" outlineWidth={0.01} outlineColor="#000" visible={!active}>
-        {label}
-      </Text>
+      <SectionTitle3D
+        label={label}
+        theme="projects"
+        position={[0, LABEL_Y - 0.1, LABEL_Z]}
+        hovered={hovered}
+        active={active}
+        visible={!active}
+      />
     </group>
   );
 };
@@ -390,9 +449,18 @@ interface BrainProps {
   active: boolean;
   label: string;
   visible?: boolean;
+  editMode?: boolean;
+  onSelectInEditMode?: () => void;
 }
 
-export const Brain: React.FC<BrainProps> = ({ onClick, active, label, visible = true }) => {
+export const Brain: React.FC<BrainProps> = ({
+  onClick,
+  active,
+  label,
+  visible = true,
+  editMode = false,
+  onSelectInEditMode,
+}) => {
   const meshRef = useRef<Mesh>(null);
   const innerRef = useRef<Mesh>(null);
   const groupRef = useRef<Group>(null);
@@ -411,20 +479,33 @@ export const Brain: React.FC<BrainProps> = ({ onClick, active, label, visible = 
       innerRef.current.rotation.y = -t * 0.5;
     }
     if (groupRef.current) {
-      const targetScale = visible ? (hovered && !active ? 1.12 : 1) : 0;
+      const targetScale = visible || editMode ? (!editMode && hovered && !active ? 1.12 : 1) : 0;
       groupRef.current.scale.lerp(_brainScaleVec.set(targetScale, targetScale, targetScale), 0.1);
     }
   });
 
   return (
-    <group ref={groupRef} position={[-2.5, BRAIN_Y, 0.5]} onClick={(e) => { e.stopPropagation(); onClick(); playClickSound(); }} onPointerOver={() => { setHover(true); playHoverSound(); }} onPointerOut={() => setHover(false)}>
+    <group
+      ref={groupRef}
+      onClick={(e) => {
+        e.stopPropagation();
+        playClickSound();
+        if (editMode) {
+          onSelectInEditMode?.();
+        } else {
+          onClick();
+        }
+      }}
+      onPointerOver={() => { setHover(true); playHoverSound(); }}
+      onPointerOut={() => setHover(false)}
+    >
       <Float speed={2} rotationIntensity={0.5} floatIntensity={0.5}>
         <mesh ref={meshRef}>
           <icosahedronGeometry args={[0.7, 0]} />
           <MeshTransmissionMaterial
             backside={false}
             samples={1}
-            resolution={512}
+            resolution={256}
             thickness={0.2}
             chromaticAberration={0.1}
             anisotropy={0.1}
@@ -444,9 +525,14 @@ export const Brain: React.FC<BrainProps> = ({ onClick, active, label, visible = 
           <meshBasicMaterial color={hovered ? "#f472b6" : "#4b5563"} transparent opacity={0.3} />
         </mesh>
       </Float>
-       <Text position={[0, LABEL_Y - BRAIN_Y, 0]} fontSize={0.15} color="white" anchorX="center" anchorY="middle" outlineWidth={0.01} outlineColor="#000">
-          {label}
-        </Text>
+      <SectionTitle3D
+        label={label}
+        theme="about"
+        position={[0, LABEL_Y - BRAIN_Y + 0.08, 0]}
+        hovered={hovered}
+        active={active}
+        visible={!active}
+      />
     </group>
   );
 };
@@ -456,9 +542,18 @@ interface SmartphoneProps {
   active: boolean;
   label: string;
   visible?: boolean;
+  editMode?: boolean;
+  onSelectInEditMode?: () => void;
 }
 
-export const Smartphone: React.FC<SmartphoneProps> = ({ onClick, active, label, visible = true }) => {
+export const Smartphone: React.FC<SmartphoneProps> = ({
+  onClick,
+  active,
+  label,
+  visible = true,
+  editMode = false,
+  onSelectInEditMode,
+}) => {
   const rootRef = useRef<Group>(null);
   const groupRef = useRef<Group>(null);
   const [hovered, setHover] = useState(false);
@@ -467,9 +562,9 @@ export const Smartphone: React.FC<SmartphoneProps> = ({ onClick, active, label, 
   useFrame((state) => {
     if (groupRef.current) {
       const t = state.clock.getElapsedTime();
-      groupRef.current.position.y = Math.sin(t * 0.6) * 0.08;
+      groupRef.current.position.y = editMode ? 0 : Math.sin(t * 0.6) * 0.08;
       groupRef.current.rotation.y = -0.2 + Math.sin(t * 0.3) * 0.15;
-      if (hovered) {
+      if (hovered && !editMode) {
         groupRef.current.rotation.z = Math.sin(t * 20) * 0.005;
         groupRef.current.position.x = Math.sin(t * 30) * 0.002;
       } else {
@@ -478,7 +573,7 @@ export const Smartphone: React.FC<SmartphoneProps> = ({ onClick, active, label, 
       }
     }
     if (rootRef.current) {
-      const targetScale = visible ? (hovered && !active ? 1.1 : 1) : 0;
+      const targetScale = visible || editMode ? (!editMode && hovered && !active ? 1.1 : 1) : 0;
       rootRef.current.scale.lerp(_phoneScaleVec.set(targetScale, targetScale, targetScale), 0.1);
     }
   });
@@ -488,7 +583,20 @@ export const Smartphone: React.FC<SmartphoneProps> = ({ onClick, active, label, 
 
   return (
     // The label sits outside the bobbing group so it stays level with the others.
-    <group ref={rootRef} position={[2.5, PHONE_Y, 0.5]} onClick={(e) => { e.stopPropagation(); onClick(); playClickSound(); }} onPointerOver={() => { setHover(true); playHoverSound(); }} onPointerOut={() => setHover(false)}>
+    <group
+      ref={rootRef}
+      onClick={(e) => {
+        e.stopPropagation();
+        playClickSound();
+        if (editMode) {
+          onSelectInEditMode?.();
+        } else {
+          onClick();
+        }
+      }}
+      onPointerOver={() => { setHover(true); playHoverSound(); }}
+      onPointerOut={() => setHover(false)}
+    >
       <group ref={groupRef}>
       <group>
         <RoundedBox args={[0.7, 1.45, 0.08]} radius={0.04} smoothness={4}><meshStandardMaterial color={frameColor} roughness={0.25} metalness={1.0} /></RoundedBox>
@@ -515,9 +623,14 @@ export const Smartphone: React.FC<SmartphoneProps> = ({ onClick, active, label, 
          <mesh position={[0, 0.1, 0.042]}><circleGeometry args={[0.06, 32]} /><meshStandardMaterial color="#555" roughness={0.3} metalness={0.8} /></mesh>
       </group>
       </group>
-      <Text position={[0, LABEL_Y - PHONE_Y, 0]} fontSize={0.15} color="white" anchorX="center" anchorY="middle" outlineWidth={0.01} outlineColor="#000">
-        {label}
-      </Text>
+      <SectionTitle3D
+        label={label}
+        theme="contact"
+        position={[0, LABEL_Y - PHONE_Y, 0]}
+        hovered={hovered}
+        active={active}
+        visible={!active}
+      />
     </group>
   );
 };

@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { LibraryItem } from '../../types';
 import { NOTEBOOK_VAULT } from '../../data/knowledgeVault';
@@ -13,11 +13,8 @@ import {
   BrainCircuit,
   MessageSquare,
   FileText,
-  HardDrive,
 } from 'lucide-react';
 import { playHoverSound, playClickSound } from '../../utils/soundEngine';
-
-const DriveGlbVault = lazy(() => import('./DriveGlbVault'));
 
 interface LibraryModalProps {
   title: string;
@@ -33,7 +30,6 @@ interface LibraryModalProps {
   readLinkLabel: string;
   statusLabel: string;
   onAskAI?: (prompt: string) => void;
-  initialTab?: 'notebooks' | 'books' | 'drive';
 }
 
 export const LibraryModal: React.FC<LibraryModalProps> = ({
@@ -44,15 +40,10 @@ export const LibraryModal: React.FC<LibraryModalProps> = ({
   readLinkLabel,
   statusLabel,
   onAskAI,
-  initialTab = 'notebooks',
 }) => {
   const { language } = useLanguage();
-  const [activeTab, setActiveTab] = useState<'books' | 'notebooks' | 'drive'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'books' | 'notebooks'>('notebooks');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-
-  useEffect(() => {
-    setActiveTab(initialTab);
-  }, [initialTab]);
 
   const categories = [
     { id: 'all', label: filterLabels.all },
@@ -91,12 +82,6 @@ export const LibraryModal: React.FC<LibraryModalProps> = ({
         : language === 'zh'
         ? '核心文献与经典 (5)'
         : 'Foundational Books (5)',
-    drive:
-      language === 'es'
-        ? 'Google Drive 3D (.glb)'
-        : language === 'zh'
-        ? 'Google Drive 3D 模型 (.glb)'
-        : 'Google Drive 3D (.glb)',
   };
 
   const askAiButtonLabel =
@@ -159,66 +144,36 @@ export const LibraryModal: React.FC<LibraryModalProps> = ({
             <BookOpen className="w-4 h-4 text-indigo-400" />
             <span>{tabLabels.books}</span>
           </button>
-
-          <button
-            onClick={() => {
-              setActiveTab('drive');
-              playClickSound();
-            }}
-            onMouseEnter={playHoverSound}
-            className={`px-4 py-2 rounded-lg text-xs md:text-sm font-mono font-bold transition-all flex items-center gap-2 ${
-              activeTab === 'drive'
-                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400 shadow-[0_0_20px_rgba(16,185,129,0.3)]'
-                : 'bg-white/5 text-gray-400 border border-white/10 hover:text-white hover:bg-white/10'
-            }`}
-          >
-            <HardDrive className="w-4 h-4 text-emerald-400" />
-            <span>{tabLabels.drive}</span>
-          </button>
         </div>
 
-        {/* Category Filters (Books & Notebooks only) */}
-        {activeTab !== 'drive' && (
-          <div className="flex flex-wrap gap-2 mt-3 pt-1">
-            {categories.map((cat) => {
-              const isActive = selectedCategory === cat.id;
-              return (
-                <button
-                  key={cat.id}
-                  onClick={() => {
-                    setSelectedCategory(cat.id);
-                    playClickSound();
-                  }}
-                  onMouseEnter={playHoverSound}
-                  className={`px-3 py-1 rounded-full text-xs font-mono transition-all flex items-center gap-1.5 ${
-                    isActive
-                      ? 'bg-cyan-500/15 text-cyan-200 border border-cyan-400/50 shadow-[0_0_12px_rgba(0,240,255,0.2)]'
-                      : 'bg-white/5 text-gray-400 border border-white/10 hover:text-white hover:bg-white/10'
-                  }`}
-                >
-                  <Layers className="w-3 h-3 opacity-70" />
-                  <span>{cat.label}</span>
-                </button>
-              );
-            })}
-          </div>
-        )}
+        {/* Category Filters */}
+        <div className="flex flex-wrap gap-2 mt-3 pt-1">
+          {categories.map((cat) => {
+            const isActive = selectedCategory === cat.id;
+            return (
+              <button
+                key={cat.id}
+                onClick={() => {
+                  setSelectedCategory(cat.id);
+                  playClickSound();
+                }}
+                onMouseEnter={playHoverSound}
+                className={`px-3 py-1 rounded-full text-xs font-mono transition-all flex items-center gap-1.5 ${
+                  isActive
+                    ? 'bg-cyan-500/15 text-cyan-200 border border-cyan-400/50 shadow-[0_0_12px_rgba(0,240,255,0.2)]'
+                    : 'bg-white/5 text-gray-400 border border-white/10 hover:text-white hover:bg-white/10'
+                }`}
+              >
+                <Layers className="w-3 h-3 opacity-70" />
+                <span>{cat.label}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Cards Scrollable Grid */}
       <div className="flex-grow overflow-y-auto custom-scrollbar py-6 pr-1 space-y-4">
-        {/* TAB 0: GOOGLE DRIVE 3D (.GLB) VAULT */}
-        {activeTab === 'drive' && (
-          <Suspense
-            fallback={
-              <div className="py-12 text-center text-xs font-mono text-cyan-300">
-                Loading Google Drive 3D Vault...
-              </div>
-            }
-          >
-            <DriveGlbVault />
-          </Suspense>
-        )}
         {/* TAB 1: NOTEBOOKLM NOTEBOOKS */}
         {activeTab === 'notebooks' && (
           <AnimatePresence mode="popLayout">

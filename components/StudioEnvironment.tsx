@@ -119,9 +119,9 @@ const StudioEnvironment: React.FC = () => {
         <mesh rotation={[0, Math.PI, 0]}>
           <cylinderGeometry args={[18, 18, 9.5, 36, 1, true, -Math.PI * 0.38, Math.PI * 0.76]} />
           <meshStandardMaterial
-            color="#080f1e"
-            metalness={0.88}
-            roughness={0.32}
+            color="#0b1528"
+            metalness={0.72}
+            roughness={0.34}
             side={DoubleSide}
           />
         </mesh>
@@ -145,29 +145,33 @@ const StudioEnvironment: React.FC = () => {
           />
         </mesh>
 
-        {/* Vertical server/structural light guides in background */}
-        {[-7, -3.5, 3.5, 7].map((xOffset, i) => (
-          <group key={i} position={[xOffset, 0, 0.2]}>
-            {/* Structural column */}
-            <mesh position={[0, 0, 0]}>
-              <boxGeometry args={[0.3, 9.0, 0.2]} />
-              <meshStandardMaterial color="#0b1324" metalness={0.9} roughness={0.25} />
-            </mesh>
-            {/* Vertical glowing neon channel */}
-            <mesh position={[0, 0, 0.11]}>
-              <boxGeometry args={[0.04, 8.6, 0.02]} />
-              <meshBasicMaterial
-                color={i % 2 === 0 ? '#00e5ff' : '#818cf8'}
-                toneMapped={false}
-              />
-            </mesh>
-          </group>
-        ))}
+        {/* Vertical structural light guides seated flush along the distant curved wall (behind library back wall) */}
+        {[-0.28, -0.1, 0.1, 0.28].map((angleFactor, i) => {
+          const theta = angleFactor * Math.PI;
+          const radius = 17.65;
+          const colX = Math.sin(theta) * radius;
+          const colZ = -Math.cos(theta) * radius;
+          return (
+            <group key={i} position={[colX, 0, colZ]} rotation={[0, -theta, 0]}>
+              <mesh>
+                <boxGeometry args={[0.3, 9.0, 0.2]} />
+                <meshStandardMaterial color="#0f1c34" metalness={0.82} roughness={0.28} />
+              </mesh>
+              <mesh position={[0, 0, 0.11]}>
+                <boxGeometry args={[0.04, 8.6, 0.02]} />
+                <meshBasicMaterial
+                  color={i % 2 === 0 ? '#00e5ff' : '#818cf8'}
+                  toneMapped={false}
+                />
+              </mesh>
+            </group>
+          );
+        })}
 
         {/* Floating overhead ceiling truss */}
-        <mesh position={[0, 5.2, 0]}>
+        <mesh position={[0, 5.2, -9]}>
           <boxGeometry args={[22, 0.25, 0.6]} />
-          <meshStandardMaterial color="#0c162c" metalness={0.85} roughness={0.3} />
+          <meshStandardMaterial color="#101d36" metalness={0.78} roughness={0.32} />
         </mesh>
       </group>
 

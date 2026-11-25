@@ -3,26 +3,44 @@ import { Pause, Play } from 'lucide-react';
 import { HERO_MEDIA, HERO_SPLIT_QUERY } from '../constants';
 import { useMediaQuery } from '../hooks/useMediaQuery';
 import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
-import { attachHeroVideo, switchToFullClip } from '../utils/heroPlayer';
+import { attachHeroVideo, switchToFullClip, toMediaVolume } from '../utils/heroPlayer';
 
 interface HeroVideoProps {
   paused: boolean;
   soundOn: boolean;
+  volume: number;
   onSoundEnd: () => void;
   onEnded: () => void;
+  onMediaReady?: () => void;
 }
 
 const prefersSaveData = (): boolean =>
   typeof navigator !== 'undefined' &&
   Boolean((navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData);
 
-const HeroVideo: React.FC<HeroVideoProps> = ({ paused, soundOn, onSoundEnd, onEnded }) => {
+const HeroVideo: React.FC<HeroVideoProps> = ({
+  paused,
+  soundOn,
+  volume,
+  onSoundEnd,
+  onEnded,
+  onMediaReady,
+}) => {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const onMediaReadyRef = useRef(onMediaReady);
+  onMediaReadyRef.current = onMediaReady;
+  const readySentRef = useRef(false);
   const prefersReducedMotion = usePrefersReducedMotion();
   const isSplit = useMediaQuery(HERO_SPLIT_QUERY);
   const [failed, setFailed] = useState(false);
   const [userPaused, setUserPaused] = useState(false);
   const [progress, setProgress] = useState(0);
+
+  const notifyMediaReady = () => {
+    if (readySentRef.current) return;
+    readySentRef.current = true;
+    onMediaReadyRef.current?.();
+  };
 
   // Asking for sound is an explicit request to play, so it overrides the still.
   const showStill = failed || ((prefersReducedMotion || prefersSaveData()) && !soundOn);
@@ -44,8 +62,9 @@ const HeroVideo: React.FC<HeroVideoProps> = ({ paused, soundOn, onSoundEnd, onEn
       switchToFullClip(video);
       setUserPaused(false);
     }
-    video.muted = !soundOn;
-  }, [soundOn, showStill, src]);
+    video.volume = toMediaVolume(volume);
+    video.muted = !soundOn || volume <= 0;
+  }, [soundOn, volume, showStill, src]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -70,6 +89,17 @@ const HeroVideo: React.FC<HeroVideoProps> = ({ paused, soundOn, onSoundEnd, onEn
     document.addEventListener('visibilitychange', sync);
     return () => document.removeEventListener('visibilitychange', sync);
   }, [paused, userPaused, showStill, src, soundOn, onSoundEnd]);
+
+  useEffect(() => {
+    if (showStill) return;
+    const video = videoRef.current;
+    if (video && video.readyState >= 2) {
+      notifyMediaReady();
+      return;
+    }
+    const timer = window.setTimeout(notifyMediaReady, 8000);
+    return () => window.clearTimeout(timer);
+  }, [showStill, src]);
 
   const handleTogglePlayback = () => {
     const video = videoRef.current;
@@ -140,7 +170,13 @@ const HeroVideo: React.FC<HeroVideoProps> = ({ paused, soundOn, onSoundEnd, onEn
           <div aria-hidden="true" />
           <div className="justify-self-start relative h-[min(74vh,680px)] aspect-[9/16] rounded-2xl border border-cyan-400/20 bg-black/50 overflow-hidden shadow-[0_0_55px_rgba(0,240,255,0.12),0_24px_64px_rgba(0,0,0,0.85)] group">
             {showStill ? (
-              <img src={HERO_MEDIA.still} alt="" className="h-full w-full object-cover" />
+              <img
+                src={HERO_MEDIA.still}
+                alt=""
+                onLoad={notifyMediaReady}
+                onError={notifyMediaReady}
+                className="h-full w-full object-cover"
+              />
             ) : (
               <>
                 <video
@@ -149,6 +185,8 @@ const HeroVideo: React.FC<HeroVideoProps> = ({ paused, soundOn, onSoundEnd, onEn
                   poster={HERO_MEDIA.poster}
                   autoPlay
                   muted
+                  onLoadedData={notifyMediaReady}
+                  onCanPlay={notifyMediaReady}
                   onPlay={() => setUserPaused(false)}
                   onTimeUpdate={handleTimeUpdate}
                   onEnded={() => {
@@ -156,9 +194,12 @@ const HeroVideo: React.FC<HeroVideoProps> = ({ paused, soundOn, onSoundEnd, onEn
                     onEnded();
                   }}
                   playsInline
-                  preload="metadata"
+                  preload="auto"
                   tabIndex={-1}
-                  onError={() => setFailed(true)}
+                  onError={() => {
+                    setFailed(true);
+                    notifyMediaReady();
+                  }}
                   className="h-full w-full object-cover"
                 />
 
@@ -205,7 +246,13 @@ const HeroVideo: React.FC<HeroVideoProps> = ({ paused, soundOn, onSoundEnd, onEn
         <div className="relative h-full w-full flex items-center justify-center">
           <div className="relative h-full max-h-screen aspect-[9/16] max-w-full flex items-center justify-center overflow-hidden">
             {showStill ? (
-              <img src={HERO_MEDIA.still} alt="" className="h-full w-full object-contain" />
+              <img
+                src={HERO_MEDIA.still}
+                alt=""
+                onLoad={notifyMediaReady}
+                onError={notifyMediaReady}
+                className="h-full w-full object-contain"
+              />
             ) : (
               <video
                 ref={videoRef}
@@ -213,6 +260,8 @@ const HeroVideo: React.FC<HeroVideoProps> = ({ paused, soundOn, onSoundEnd, onEn
                 poster={HERO_MEDIA.poster}
                 autoPlay
                 muted
+                onLoadedData={notifyMediaReady}
+                onCanPlay={notifyMediaReady}
                 onPlay={() => setUserPaused(false)}
                 onTimeUpdate={handleTimeUpdate}
                 onEnded={() => {
@@ -220,9 +269,12 @@ const HeroVideo: React.FC<HeroVideoProps> = ({ paused, soundOn, onSoundEnd, onEn
                   onEnded();
                 }}
                 playsInline
-                preload="metadata"
+                preload="auto"
                 tabIndex={-1}
-                onError={() => setFailed(true)}
+                onError={() => {
+                  setFailed(true);
+                  notifyMediaReady();
+                }}
                 className="h-full w-full object-contain"
               />
             )}

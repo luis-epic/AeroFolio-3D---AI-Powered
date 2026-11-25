@@ -11,6 +11,7 @@ export const TRANSLATIONS = {
         sound: "Listen",
         mute: "Mute",
         replay: "Replay",
+        volume: "Volume",
 
         next: "Next",
         quickView: "Quick view",
@@ -205,6 +206,7 @@ export const TRANSLATIONS = {
         sound: "Escuchar",
         mute: "Silenciar",
         replay: "Ver de nuevo",
+        volume: "Volumen",
 
         next: "Siguiente",
         quickView: "Versión rápida",
@@ -399,6 +401,7 @@ export const TRANSLATIONS = {
         sound: "播放声音",
         mute: "静音",
         replay: "重新播放",
+        volume: "音量",
 
         next: "下一步",
         quickView: "快速版",

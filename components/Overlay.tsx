@@ -7,12 +7,21 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { Language } from '../translations';
 import { playHoverSound, playClickSound, duckAmbient, unduckAmbient } from '../utils/soundEngine';
 import { fetchGitHubProfile, type GitHubProfile, type GitHubFailureReason } from '../services/githubService';
-import { Box, HardDrive, Mic, Volume2, VolumeX, Zap, BrainCircuit, Sparkles } from 'lucide-react';
+import { Box, Mic, Move3d, Sparkles, Video, Volume2, VolumeX, Zap, BrainCircuit } from 'lucide-react';
 import Navigation from './overlay/Navigation';
 import StatsWidget from './overlay/StatsWidget';
 import Hero from './overlay/Hero';
 import ScrambleText from './overlay/ScrambleText';
 import ContactLinks from './overlay/ContactLinks';
+import RoomLayoutPanel from './overlay/RoomLayoutPanel';
+import CameraTourBar from './overlay/CameraTourBar';
+import type {
+  RoomItemId,
+  RoomItemTransform,
+  RoomLayoutState,
+  TransformGizmoMode,
+} from '../utils/roomLayoutStore';
+import type { CameraBridge, CameraStudioConfig } from '../utils/cameraTourStore';
 
 const Projects = lazy(() => import('./Projects').then((m) => ({ default: m.Projects })));
 const LibraryModal = lazy(() => import('./overlay/LibraryModal').then((m) => ({ default: m.LibraryModal })));
@@ -23,9 +32,34 @@ interface OverlayProps {
   setActiveSection: (section: Section) => void;
   soundOn: boolean;
   onToggleSound: () => void;
+  volume: number;
+  onChangeVolume: (nextVolume: number) => void;
   heroEnded: boolean;
   liteMode: boolean;
   onToggleLiteMode: () => void;
+  roomLayout: RoomLayoutState;
+  layoutEditMode: boolean;
+  onToggleLayoutEditMode: () => void;
+  selectedRoomItem: RoomItemId;
+  onSelectRoomItem: (id: RoomItemId) => void;
+  gizmoMode: TransformGizmoMode;
+  onChangeGizmoMode: (mode: TransformGizmoMode) => void;
+  snapEnabled: boolean;
+  onToggleSnap: () => void;
+  onUpdateRoomItem: (id: RoomItemId, next: RoomItemTransform) => void;
+  onResetRoomItem: (id: RoomItemId) => void;
+  onResetAllRoom: () => void;
+  cameraConfig: CameraStudioConfig;
+  cameraBridgeRef: React.MutableRefObject<CameraBridge | null>;
+  tourActive: boolean;
+  tourPlaying: boolean;
+  tourStopIndex: number;
+  onToggleTourActive: () => void;
+  onToggleTourPlay: () => void;
+  onSelectTourStop: (idx: number) => void;
+  onChangeCameraConfig: (next: CameraStudioConfig) => void;
+  onResetCameraConfig: () => void;
+  onExitTour: () => void;
 }
 
 // --- CUSTOM CURSOR COMPONENT (TACTICAL PRECISION) ---
@@ -190,7 +224,41 @@ const RecruiterHUD: React.FC<{
   />
 );
 
-const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSection, soundOn, onToggleSound, heroEnded, liteMode, onToggleLiteMode }) => {
+const Overlay: React.FC<OverlayProps> = ({
+  activeSection,
+  onClose,
+  setActiveSection,
+  soundOn,
+  onToggleSound,
+  volume,
+  onChangeVolume,
+  heroEnded,
+  liteMode,
+  onToggleLiteMode,
+  roomLayout,
+  layoutEditMode,
+  onToggleLayoutEditMode,
+  selectedRoomItem,
+  onSelectRoomItem,
+  gizmoMode,
+  onChangeGizmoMode,
+  snapEnabled,
+  onToggleSnap,
+  onUpdateRoomItem,
+  onResetRoomItem,
+  onResetAllRoom,
+  cameraConfig,
+  cameraBridgeRef,
+  tourActive,
+  tourPlaying,
+  tourStopIndex,
+  onToggleTourActive,
+  onToggleTourPlay,
+  onSelectTourStop,
+  onChangeCameraConfig,
+  onResetCameraConfig,
+  onExitTour,
+}) => {
   const [visible, setVisible] = useState(false);
   const { t, language, setLanguage } = useLanguage();
   
@@ -199,7 +267,6 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [knowledgeMode, setKnowledgeMode] = useState(true);
-  const [libraryTab, setLibraryTab] = useState<'notebooks' | 'books' | 'drive'>('notebooks');
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
   // GitHub Data State. `loading` is tracked separately from failure so the
@@ -408,32 +475,105 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
       <div className={`absolute inset-0 bg-black/70 z-10 transition-opacity duration-500 pointer-events-none ${visible ? 'opacity-100' : 'opacity-0'}`} />
 
       <Hero
-        hidden={activeSection !== 'home'}
+        hidden={activeSection !== 'home' || layoutEditMode || tourActive}
         copy={t.home}
         soundOn={soundOn}
         heroEnded={heroEnded}
         onToggleSound={onToggleSound}
+        volume={volume}
+        onChangeVolume={onChangeVolume}
         liteMode={liteMode}
       />
       <div className="absolute top-8 right-6 md:right-8 z-50 flex items-center gap-2">
-        <button
-          type="button"
-          onClick={() => {
-            playClickSound();
-            setLibraryTab('drive');
-            setActiveSection('library');
-          }}
-          onMouseEnter={playHoverSound}
-          aria-label="Google Drive 3D (.glb)"
-          title="Google Drive 3D (.glb)"
-          className={`${TOP_BUTTON_CLASS} !px-2.5 !py-2`}
-        >
-          <HardDrive aria-hidden="true" className="h-4 w-4 text-emerald-400 shrink-0" />
-          <span className="hidden sm:inline text-xs">Drive 3D</span>
-        </button>
+        {!liteMode && (
+          <>
+            <button
+              type="button"
+              onClick={() => {
+                playClickSound();
+                onToggleTourActive();
+              }}
+              onMouseEnter={playHoverSound}
+              aria-pressed={tourActive}
+              aria-label={language === 'es' ? 'Tour de cámara 3D' : language === 'zh' ? '3D 镜头导览' : '3D Camera Tour'}
+              title={language === 'es' ? 'Tour de cámara 3D' : language === 'zh' ? '3D 镜头导览' : '3D Camera Tour'}
+              className={`${TOP_BUTTON_CLASS} !px-2.5 !py-2 ${
+                tourActive ? '!bg-emerald-400 !text-black !border-emerald-300 shadow-[0_0_16px_rgba(52,211,153,0.45)]' : ''
+              }`}
+            >
+              <Video aria-hidden="true" className={`h-4 w-4 shrink-0 ${tourActive ? 'text-black' : 'text-emerald-300'}`} />
+              <span className="hidden sm:inline text-xs font-bold">
+                {language === 'es' ? 'Tour 3D' : language === 'zh' ? '导览' : 'Tour 3D'}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                playClickSound();
+                onToggleLayoutEditMode();
+              }}
+              onMouseEnter={playHoverSound}
+              aria-pressed={layoutEditMode}
+              aria-label={language === 'es' ? 'Organizar objetos y cámara 3D' : language === 'zh' ? '整理 3D 场景与镜头' : 'Arrange 3D objects & camera'}
+              title={language === 'es' ? 'Organizar objetos y cámara 3D' : language === 'zh' ? '整理 3D 场景与镜头' : 'Arrange 3D objects & camera'}
+              className={`${TOP_BUTTON_CLASS} !px-2.5 !py-2 ${
+                layoutEditMode ? '!bg-cyan-400 !text-black !border-cyan-300 shadow-[0_0_16px_rgba(34,211,238,0.45)]' : ''
+              }`}
+            >
+              <Move3d aria-hidden="true" className={`h-4 w-4 shrink-0 ${layoutEditMode ? 'text-black' : 'text-cyan-300'}`} />
+              <span className="hidden sm:inline text-xs font-bold">
+                {language === 'es' ? 'Ordenar 3D' : language === 'zh' ? '3D 布局' : 'Arrange 3D'}
+              </span>
+            </button>
+          </>
+        )}
         <ViewToggle liteMode={liteMode} onToggle={onToggleLiteMode} labels={t.home.cta} />
         <LanguageToggle language={language} toggleLanguage={toggleLanguage} />
       </div>
+      {layoutEditMode && !liteMode && (
+        <RoomLayoutPanel
+          layout={roomLayout}
+          selectedItem={selectedRoomItem}
+          onSelectItem={onSelectRoomItem}
+          gizmoMode={gizmoMode}
+          onChangeGizmoMode={onChangeGizmoMode}
+          snapEnabled={snapEnabled}
+          onToggleSnap={onToggleSnap}
+          onUpdateItem={onUpdateRoomItem}
+          onResetItem={onResetRoomItem}
+          onResetAll={onResetAllRoom}
+          cameraConfig={cameraConfig}
+          cameraBridgeRef={cameraBridgeRef}
+          tourPlaying={tourPlaying}
+          tourStopIndex={tourStopIndex}
+          onSelectTourStop={onSelectTourStop}
+          onToggleTourPlay={onToggleTourPlay}
+          onChangeCameraConfig={onChangeCameraConfig}
+          onResetCameraConfig={onResetCameraConfig}
+          onClose={onToggleLayoutEditMode}
+        />
+      )}
+      {tourActive && !layoutEditMode && !liteMode && (
+        <CameraTourBar
+          stops={cameraConfig.tourStops}
+          currentIndex={tourStopIndex}
+          playing={tourPlaying}
+          loop={cameraConfig.tourLoop}
+          onTogglePlay={onToggleTourPlay}
+          onPrev={() =>
+            onSelectTourStop(
+              (tourStopIndex - 1 + cameraConfig.tourStops.length) % Math.max(1, cameraConfig.tourStops.length)
+            )
+          }
+          onNext={() =>
+            onSelectTourStop((tourStopIndex + 1) % Math.max(1, cameraConfig.tourStops.length))
+          }
+          onToggleLoop={() =>
+            onChangeCameraConfig({ ...cameraConfig, tourLoop: !cameraConfig.tourLoop })
+          }
+          onExit={onExitTour}
+        />
+      )}
       <RecruiterHUD
         activeSection={activeSection}
         onNavigate={handleNav}
@@ -839,7 +979,6 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
                     readLinkLabel={t.library.readLink}
                     statusLabel={t.library.statusReading}
                     onAskAI={handleAskAIFromLibrary}
-                    initialTab={libraryTab}
                   />
                 </Suspense>
               </motion.div>

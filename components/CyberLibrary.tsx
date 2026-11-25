@@ -1,8 +1,9 @@
 import React, { useRef, useState, useMemo, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Group, Mesh, CatmullRomCurve3, TubeGeometry, Vector3 } from 'three';
-import { Text, Billboard, Sparkles } from '@react-three/drei';
+import { Sparkles } from '@react-three/drei';
 import { playHoverSound, playClickSound } from '../utils/soundEngine';
+import SectionTitle3D from './SectionTitle3D';
 
 interface CyberLibraryProps {
   active: boolean;
@@ -752,36 +753,13 @@ export const CyberLibrary: React.FC<CyberLibraryProps> = ({
         opacity={hovered ? 0.78 : 0.35}
       />
 
-      <Billboard position={[0, 1.72, 0]} follow={true} lockX={false} lockY={false} lockZ={false}>
-        <group>
-          <mesh position={[0, 0, -0.01]}>
-            <planeGeometry args={[1.55, 0.32]} />
-            <meshBasicMaterial
-              color="#030712"
-              transparent
-              opacity={0.85}
-              depthWrite={false}
-            />
-          </mesh>
-          <mesh position={[0, -0.16, 0]}>
-            <planeGeometry args={[1.55, 0.02]} />
-            <meshBasicMaterial
-              color={hovered || active ? CYAN : '#0284c7'}
-              toneMapped={false}
-            />
-          </mesh>
-          <Text
-            position={[0, 0.02, 0.01]}
-            fontSize={0.095}
-            color={hovered || active ? '#ffffff' : '#94a3b8'}
-            anchorX="center"
-            anchorY="middle"
-            letterSpacing={0.12}
-          >
-            {label}
-          </Text>
-        </group>
-      </Billboard>
+      <SectionTitle3D
+        label={label}
+        theme="library"
+        position={[0, 1.72, 0]}
+        hovered={hovered}
+        active={active}
+      />
     </group>
   );
 };

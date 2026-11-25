@@ -2,28 +2,28 @@ import { Section, CameraTarget, ProjectData } from './types';
 
 export const CAMERA_POSITIONS: Record<Section, CameraTarget> = {
   home: {
-    // Aimed at the heart of the presentation so the wider hologram,
-    // name, and holographic elements are comfortably centered in view.
-    position: [0, 3.1, 8.8],
-    target: [0, 2.9, 0],
+    // Heroic presentation camera framing the elevated hologram speaker on the
+    // mezzanine slightly right of center so left-hand Hero typography stays clear.
+    position: [-0.95, 4.45, 0.35],
+    target: [-0.85, 5.15, -10.32],
   },
   about: {
-    position: [-2, 1.5, 3], // Focus on "Brain" (Left side)
-    target: [-1.5, 0.5, 0],
+    position: [-1.4, 2.25, 2.35], // Focus on "Brain" hovering above left library table
+    target: [-2.7, 1.85, -0.45],
   },
   projects: {
-    // Changed from frontal view to "User sitting at desk" view (Higher Y, Closer Z)
-    position: [0, 1.6, 1.5], 
-    target: [0, 0.5, -0.2], // Look at center of screen (was 0.2)
+    // Front-right view of the Laptop station on the front reading table
+    position: [2.3, 2.25, 8.2],
+    target: [3.23, 1.5, 5.67],
   },
   library: {
-    // Focus on CyberLibrary (Dual-bay cyber archive rack + side control console)
-    position: [-1.55, 1.7, 2.35],
-    target: [-3.45, 1.15, -0.95],
+    // Full symmetrical showcase of the centered GLB Library interior
+    position: [0, 4.3, 9.6],
+    target: [0, 2.4, -1.8],
   },
   contact: {
-    position: [2, 1.8, 3], // Higher Y to see full phone
-    target: [2.5, 0.5, 0], // Center on phone position
+    position: [1.4, 2.25, 2.35], // Focus on iPhone above right library table
+    target: [2.7, 1.84, -0.51],
   },
 };
 

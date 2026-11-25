@@ -1,8 +1,8 @@
-import React from 'react';
-import { RotateCcw, Volume2, VolumeX } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { ChevronDown, RotateCcw, Volume1, Volume2, VolumeX } from 'lucide-react';
 import { HERO_MEDIA, HERO_SPLIT_QUERY } from '../../constants';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
-import { playHoverSound } from '../../utils/soundEngine';
+import { playClickSound, playHoverSound } from '../../utils/soundEngine';
 import ScrambleText from './ScrambleText';
 
 export interface HeroCopy {
@@ -13,6 +13,7 @@ export interface HeroCopy {
     sound: string;
     mute: string;
     replay: string;
+    volume: string;
   };
 }
 
@@ -22,11 +23,10 @@ interface HeroProps {
   soundOn: boolean;
   heroEnded: boolean;
   onToggleSound: () => void;
+  volume: number;
+  onChangeVolume: (nextVolume: number) => void;
   liteMode?: boolean;
 }
-
-const ACTION_CLASS =
-  'pointer-events-auto inline-flex items-center gap-2 rounded-full border px-4 py-2 font-mono text-xs uppercase tracking-wider backdrop-blur-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70';
 
 const Hero: React.FC<HeroProps> = ({
   hidden,
@@ -34,11 +34,46 @@ const Hero: React.FC<HeroProps> = ({
   soundOn,
   heroEnded,
   onToggleSound,
+  volume,
+  onChangeVolume,
   liteMode = false,
 }) => {
   const isSplit = useMediaQuery(HERO_SPLIT_QUERY);
-  const SoundIcon = heroEnded ? RotateCcw : soundOn ? VolumeX : Volume2;
-  const soundLabel = heroEnded ? copy.cta.replay : soundOn ? copy.cta.mute : copy.cta.sound;
+  const [hovered, setHovered] = useState(false);
+  const [pinnedOpen, setPinnedOpen] = useState(false);
+  const controlRef = useRef<HTMLDivElement>(null);
+
+  const effectiveVolume = soundOn ? volume : 0;
+  const volumePct = Math.round(volume * 100);
+  const displayPct = soundOn ? volumePct : 0;
+  const isVolumeOpen = !hidden && (hovered || pinnedOpen);
+
+  useEffect(() => {
+    if (hidden) {
+      setHovered(false);
+      setPinnedOpen(false);
+    }
+  }, [hidden]);
+
+  useEffect(() => {
+    if (!pinnedOpen) return;
+    const onPointerDown = (e: PointerEvent) => {
+      if (controlRef.current && !controlRef.current.contains(e.target as Node)) {
+        setPinnedOpen(false);
+      }
+    };
+    window.addEventListener('pointerdown', onPointerDown);
+    return () => window.removeEventListener('pointerdown', onPointerDown);
+  }, [pinnedOpen]);
+
+  const SoundIcon = heroEnded
+    ? RotateCcw
+    : !soundOn || volume <= 0
+      ? VolumeX
+      : volume < 0.45
+        ? Volume1
+        : Volume2;
+  const soundLabel = heroEnded ? copy.cta.replay : soundOn && volume > 0 ? copy.cta.mute : copy.cta.sound;
   const useSplitStage = liteMode && isSplit;
 
   const content = (
@@ -66,18 +101,99 @@ const Hero: React.FC<HeroProps> = ({
       )}
 
       {HERO_MEDIA.hasAudio && (
-        <div className="mt-6 flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={onToggleSound}
-            onMouseEnter={playHoverSound}
-            aria-pressed={heroEnded ? undefined : soundOn}
-            data-sound-toggle
-            className={`${ACTION_CLASS} border-white/25 bg-black/50 text-gray-100 hover:bg-white/15`}
+        <div className="mt-6 flex items-center">
+          <div
+            ref={controlRef}
+            role="group"
+            aria-label={copy.cta.volume}
+            onMouseEnter={() => setHovered(true)}
+            onMouseLeave={() => setHovered(false)}
+            className="pointer-events-auto relative inline-block"
           >
-            <SoundIcon aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
-            {soundLabel}
-          </button>
+            <div className="inline-flex items-center rounded-full border border-white/25 bg-black/55 backdrop-blur-md transition-colors hover:border-cyan-400/45">
+              <button
+                type="button"
+                onClick={onToggleSound}
+                onMouseEnter={playHoverSound}
+                aria-pressed={heroEnded ? undefined : soundOn}
+                data-sound-toggle
+                className="inline-flex items-center gap-2 rounded-l-full py-2 pl-4 pr-3 font-mono text-xs uppercase tracking-wider text-gray-100 hover:bg-white/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+              >
+                <SoundIcon aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-cyan-300" />
+                {soundLabel}
+              </button>
+
+              <span aria-hidden="true" className="h-4 w-px bg-white/15" />
+
+              <button
+                type="button"
+                data-volume-control
+                onClick={() => {
+                  playClickSound();
+                  setPinnedOpen((prev) => !prev);
+                }}
+                onMouseEnter={playHoverSound}
+                aria-expanded={isVolumeOpen}
+                aria-label={copy.cta.volume}
+                title={copy.cta.volume}
+                className="inline-flex items-center gap-1 rounded-r-full py-2 pl-2.5 pr-3 font-mono text-[11px] tabular-nums text-cyan-300 hover:bg-white/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/70"
+              >
+                <span>{displayPct}%</span>
+                <ChevronDown
+                  aria-hidden="true"
+                  className={`h-3.5 w-3.5 transition-transform duration-200 ${isVolumeOpen ? 'rotate-180' : ''}`}
+                />
+              </button>
+            </div>
+
+            {/* Dropdown volume panel deployed directly beneath the Listen/Replay button */}
+            <div
+              data-volume-control
+              className={`absolute left-0 top-full pt-2 z-30 transition-all duration-200 origin-top ${
+                isVolumeOpen
+                  ? 'opacity-100 scale-100 pointer-events-auto translate-y-0'
+                  : 'opacity-0 scale-95 pointer-events-none -translate-y-1'
+              }`}
+            >
+              <div className="flex items-center gap-2.5 rounded-2xl border border-cyan-400/30 bg-[#070b14]/95 px-3.5 py-2.5 shadow-[0_12px_32px_rgba(0,0,0,0.75)] backdrop-blur-md">
+                <button
+                  type="button"
+                  onClick={onToggleSound}
+                  aria-label={soundOn && volume > 0 ? copy.cta.mute : copy.cta.sound}
+                  className="text-cyan-300 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/70 rounded"
+                >
+                  {!soundOn || volume <= 0 ? (
+                    <VolumeX aria-hidden="true" className="h-4 w-4" />
+                  ) : volume < 0.45 ? (
+                    <Volume1 aria-hidden="true" className="h-4 w-4" />
+                  ) : (
+                    <Volume2 aria-hidden="true" className="h-4 w-4" />
+                  )}
+                </button>
+                <label htmlFor="hero-volume-slider" className="sr-only">
+                  {copy.cta.volume}
+                </label>
+                <input
+                  id="hero-volume-slider"
+                  type="range"
+                  min={0}
+                  max={100}
+                  step={1}
+                  value={displayPct}
+                  aria-label={copy.cta.volume}
+                  aria-valuetext={`${displayPct}%`}
+                  onChange={(e) => {
+                    const next = Number(e.target.value) / 100;
+                    onChangeVolume(next);
+                  }}
+                  className="h-1.5 w-32 cursor-pointer appearance-none rounded-full bg-white/15 accent-cyan-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/70"
+                />
+                <span className="w-9 text-right font-mono text-[11px] tabular-nums text-cyan-300">
+                  {Math.round(effectiveVolume * 100)}%
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

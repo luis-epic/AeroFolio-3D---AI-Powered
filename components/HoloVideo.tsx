@@ -15,17 +15,29 @@ import {
 } from 'three';
 import { HERO_MEDIA } from '../constants';
 import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
-import { attachHeroVideo, switchToFullClip } from '../utils/heroPlayer';
+import {
+  attachHeroVideo,
+  getEffectiveHeroMediaVolume,
+  switchToFullClip,
+  toMediaVolume,
+} from '../utils/heroPlayer';
+import { claimPreloadedHeroVideo } from '../utils/assetPreloader';
 
 interface HoloVideoProps {
   paused: boolean;
   soundOn: boolean;
+  volume: number;
   /** Audible playback was refused; the caller falls back to muted. */
   onSoundEnd: () => void;
   /** The clip played through. It stays frozen on its last frame. */
   onEnded: () => void;
   /** Hide procedural projector base when replaced by GLB hologram projector */
   hideBase?: boolean;
+  /** Layout editor mode: clicking selects the hologram video */
+  editMode?: boolean;
+  onSelectInEditMode?: () => void;
+  /** Fires once poster/still texture and video buffer are ready to render/play */
+  onMediaReady?: () => void;
 }
 
 // Expanded lateral width gives the holographic projection a wide, commanding cinematic presence
@@ -34,9 +46,6 @@ const PLANE_HEIGHT = 6.0;
 const PLANE_WIDTH = 4.6; // Expands lateral field by ~36% (from 3.375 to 4.6)
 const HOLO_COLOR = '#00ffff';
 
-// The emitter floats high enough that, seen from the home camera, it clears
-// the laptop in front of it and the row of labels above the desk objects.
-const EMITTER_Y = 1.35;
 const EMITTER_RADIUS = 1.3;
 const BEAM_HEIGHT = 1;
 const SCAN_HEIGHT = 0.7;
@@ -151,8 +160,8 @@ const createScanFade = (): CanvasTexture =>
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   });
 
-const loadImageTexture = (url: string): Texture => {
-  const texture = new TextureLoader().load(url);
+const loadImageTexture = (url: string, onSettled?: () => void): Texture => {
+  const texture = new TextureLoader().load(url, onSettled, undefined, onSettled);
   texture.colorSpace = SRGBColorSpace;
   texture.minFilter = LinearFilter;
   texture.magFilter = LinearFilter;
@@ -161,7 +170,17 @@ const loadImageTexture = (url: string): Texture => {
   return texture;
 };
 
-const HoloVideo: React.FC<HoloVideoProps> = ({ paused, soundOn, onSoundEnd, onEnded, hideBase = false }) => {
+const HoloVideo: React.FC<HoloVideoProps> = ({
+  paused,
+  soundOn,
+  volume,
+  onSoundEnd,
+  onEnded,
+  hideBase = false,
+  editMode = false,
+  onSelectInEditMode,
+  onMediaReady,
+}) => {
   const ringRef = useRef<Mesh>(null);
   const scanRef = useRef<Mesh>(null);
   const pictureRef = useRef<Mesh>(null);
@@ -173,18 +192,27 @@ const HoloVideo: React.FC<HoloVideoProps> = ({ paused, soundOn, onSoundEnd, onEn
   // Asking for sound is an explicit request to play, so it overrides the still.
   const showStill = (prefersReducedMotion || prefersSaveData()) && !soundOn;
 
+  const onMediaReadyRef = useRef(onMediaReady);
+  onMediaReadyRef.current = onMediaReady;
+  const [imageReady, setImageReady] = useState(false);
+  const [videoReady, setVideoReady] = useState(() => showStill);
+  const readyNotifiedRef = useRef(false);
+
   // Shown until the first video frame decodes, and permanently for visitors who
   // asked for reduced motion or data saving.
   //
   // Loaded in an effect, never during render: TextureLoader.load() notifies
-  // three's loading manager synchronously, which updates the <Loader> fallback.
-  // Doing that mid-render restarts the suspended render, which loads again, and
-  // the scene never leaves its loading state.
+  // three's loading manager synchronously, which updates the loader state.
   const [imageTexture, setImageTexture] = useState<Texture | null>(null);
   useEffect(() => {
-    const texture = loadImageTexture(showStill ? HERO_MEDIA.still : HERO_MEDIA.poster);
+    let active = true;
+    setImageReady(false);
+    const texture = loadImageTexture(showStill ? HERO_MEDIA.still : HERO_MEDIA.poster, () => {
+      if (active) setImageReady(true);
+    });
     setImageTexture(texture);
     return () => {
+      active = false;
       texture.dispose();
       setImageTexture(null);
     };
@@ -205,23 +233,35 @@ const HoloVideo: React.FC<HoloVideoProps> = ({ paused, soundOn, onSoundEnd, onEn
   );
 
   useEffect(() => {
-    if (showStill) return;
+    if (showStill) {
+      setVideoReady(true);
+      return;
+    }
 
+    setVideoReady(false);
     const useMobileClip = typeof window !== 'undefined' && window.innerWidth < 768;
-    const element = document.createElement('video');
-    element.dataset.clip = useMobileClip ? 'mobile' : 'full';
-    // Serve the compact 708KB clip on mobile until audio is requested, saving ~4.7MB on startup
-    element.src = useMobileClip ? HERO_MEDIA.mp4Mobile : HERO_MEDIA.mp4;
-    element.crossOrigin = 'anonymous';
-    element.muted = true;
-    // Plays once. When it ends the texture keeps the last frame, so the
-    // hologram rests on a final pose instead of starting over.
-    element.loop = false;
-    element.playsInline = true;
-    element.preload = 'metadata';
+    const clipKind: 'mobile' | 'full' = useMobileClip ? 'mobile' : 'full';
+    const claimed = claimPreloadedHeroVideo(clipKind);
+
+    const element = claimed ? claimed.element : document.createElement('video');
+    if (!claimed) {
+      element.dataset.clip = clipKind;
+      // Serve the compact 708KB clip on mobile until audio is requested, saving ~4.7MB on startup
+      element.src = useMobileClip ? HERO_MEDIA.mp4Mobile : HERO_MEDIA.mp4;
+      element.crossOrigin = 'anonymous';
+      element.muted = true;
+      // Plays once. When it ends the texture keeps the last frame, so the
+      // hologram rests on a final pose instead of starting over.
+      element.loop = false;
+      element.playsInline = true;
+      element.preload = 'auto';
+    }
+    element.volume = getEffectiveHeroMediaVolume();
 
     let texture: VideoTexture | null = null;
-    const onReady = () => {
+    let settled = false;
+    const createTextureIfNeeded = () => {
+      if (texture) return;
       texture = new VideoTexture(element);
       texture.colorSpace = SRGBColorSpace;
       texture.minFilter = LinearFilter;
@@ -230,13 +270,39 @@ const HoloVideo: React.FC<HoloVideoProps> = ({ paused, soundOn, onSoundEnd, onEn
       texture.anisotropy = 16; // Maximum anisotropic filtering for razor-sharp rendering
       setVideoTexture(texture);
     };
-    element.addEventListener('loadeddata', onReady, { once: true });
+    const markReady = () => {
+      if (settled) return;
+      settled = true;
+      createTextureIfNeeded();
+      setVideoReady(true);
+    };
+    const markError = () => {
+      if (settled) return;
+      settled = true;
+      setVideoReady(true);
+    };
+
+    element.addEventListener('loadeddata', markReady, { once: true });
+    element.addEventListener('canplay', markReady, { once: true });
+    element.addEventListener('error', markError, { once: true });
+    const safetyTimer = window.setTimeout(markReady, 8000);
+
+    if (!claimed) {
+      element.load();
+    }
+    if (claimed?.alreadyReady || element.readyState >= 2) {
+      markReady();
+    }
+
     setVideo(element);
     const detach = attachHeroVideo(element);
 
     return () => {
+      window.clearTimeout(safetyTimer);
       detach();
-      element.removeEventListener('loadeddata', onReady);
+      element.removeEventListener('loadeddata', markReady);
+      element.removeEventListener('canplay', markReady);
+      element.removeEventListener('error', markError);
       element.pause();
       element.removeAttribute('src');
       element.load();
@@ -246,12 +312,20 @@ const HoloVideo: React.FC<HoloVideoProps> = ({ paused, soundOn, onSoundEnd, onEn
     };
   }, [showStill]);
 
+  useEffect(() => {
+    if (imageReady && videoReady && !readyNotifiedRef.current) {
+      readyNotifiedRef.current = true;
+      onMediaReadyRef.current?.();
+    }
+  }, [imageReady, videoReady]);
+
   // The restart with sound happens in the click (see utils/heroPlayer).
   useEffect(() => {
     if (!video) return;
     if (soundOn) switchToFullClip(video);
-    video.muted = !soundOn;
-  }, [video, soundOn]);
+    video.volume = toMediaVolume(volume);
+    video.muted = !soundOn || volume <= 0;
+  }, [video, soundOn, volume]);
 
   useEffect(() => {
     if (!video) return;
@@ -269,7 +343,7 @@ const HoloVideo: React.FC<HoloVideoProps> = ({ paused, soundOn, onSoundEnd, onEn
       }
       // play() on a finished clip would start it over; only an explicit
       // replay (utils/heroPlayer) does that.
-      if (video.ended) return;
+      if (video.ended || !video.paused) return;
       // Autoplay can be refused (e.g. iOS low power mode); the poster stays
       // visible. If it was refused because of the sound, fall back to muted.
       video.play().catch(() => {
@@ -309,7 +383,13 @@ const HoloVideo: React.FC<HoloVideoProps> = ({ paused, soundOn, onSoundEnd, onEn
   const map = videoTexture ?? imageTexture;
 
   return (
-    <group position={[0, EMITTER_Y, -2.4]}>
+    <group
+      onClick={(e) => {
+        if (!editMode) return;
+        e.stopPropagation();
+        onSelectInEditMode?.();
+      }}
+    >
       {!hideBase && (
         <>
           {/* Floating emitter */}
@@ -367,7 +447,7 @@ const HoloVideo: React.FC<HoloVideoProps> = ({ paused, soundOn, onSoundEnd, onEn
       </mesh>
 
       {map && (
-        <mesh ref={pictureRef} position={[0, PLANE_HEIGHT / 2 + 0.1, 0]} scale={[1, 0.01, 1]}>
+        <mesh ref={pictureRef} position={[0, PLANE_HEIGHT / 2 + 0.1, 0]} scale={[1, 1, 1]}>
           <planeGeometry args={[PLANE_WIDTH, PLANE_HEIGHT]} />
           <meshBasicMaterial
             ref={pictureMaterialRef}
@@ -382,25 +462,25 @@ const HoloVideo: React.FC<HoloVideoProps> = ({ paused, soundOn, onSoundEnd, onEn
         </mesh>
       )}
 
-      {/* Lateral holographic aperture accents */}
+      {/* Lateral holographic aperture accents (HDR luminance triggers selective neon bloom) */}
       <group position={[0, PLANE_HEIGHT / 2 + 0.1, 0.01]}>
         <mesh position={[-PLANE_WIDTH / 2 - 0.08, 0, 0]}>
-          <planeGeometry args={[0.02, PLANE_HEIGHT * 0.65]} />
+          <planeGeometry args={[0.022, PLANE_HEIGHT * 0.65]} />
           <meshBasicMaterial
-            color={HOLO_COLOR}
+            color={[0, 1.55, 1.85]}
             transparent
-            opacity={0.22}
+            opacity={0.42}
             blending={AdditiveBlending}
             depthWrite={false}
             toneMapped={false}
           />
         </mesh>
         <mesh position={[PLANE_WIDTH / 2 + 0.08, 0, 0]}>
-          <planeGeometry args={[0.02, PLANE_HEIGHT * 0.65]} />
+          <planeGeometry args={[0.022, PLANE_HEIGHT * 0.65]} />
           <meshBasicMaterial
-            color={HOLO_COLOR}
+            color={[0, 1.55, 1.85]}
             transparent
-            opacity={0.22}
+            opacity={0.42}
             blending={AdditiveBlending}
             depthWrite={false}
             toneMapped={false}
