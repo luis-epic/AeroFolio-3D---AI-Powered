@@ -7,7 +7,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { Language } from '../translations';
 import { playHoverSound, playClickSound, duckAmbient, unduckAmbient } from '../utils/soundEngine';
 import { fetchGitHubProfile, type GitHubProfile, type GitHubFailureReason } from '../services/githubService';
-import { Box, Mic, Volume2, VolumeX, Zap, BrainCircuit, Sparkles } from 'lucide-react';
+import { Box, HardDrive, Mic, Volume2, VolumeX, Zap, BrainCircuit, Sparkles } from 'lucide-react';
 import Navigation from './overlay/Navigation';
 import StatsWidget from './overlay/StatsWidget';
 import Hero from './overlay/Hero';
@@ -199,6 +199,7 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [knowledgeMode, setKnowledgeMode] = useState(true);
+  const [libraryTab, setLibraryTab] = useState<'notebooks' | 'books' | 'drive'>('notebooks');
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
   // GitHub Data State. `loading` is tracked separately from failure so the
@@ -415,6 +416,21 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
         liteMode={liteMode}
       />
       <div className="absolute top-8 right-6 md:right-8 z-50 flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => {
+            playClickSound();
+            setLibraryTab('drive');
+            setActiveSection('library');
+          }}
+          onMouseEnter={playHoverSound}
+          aria-label="Google Drive 3D (.glb)"
+          title="Google Drive 3D (.glb)"
+          className={`${TOP_BUTTON_CLASS} !px-2.5 !py-2`}
+        >
+          <HardDrive aria-hidden="true" className="h-4 w-4 text-emerald-400 shrink-0" />
+          <span className="hidden sm:inline text-xs">Drive 3D</span>
+        </button>
         <ViewToggle liteMode={liteMode} onToggle={onToggleLiteMode} labels={t.home.cta} />
         <LanguageToggle language={language} toggleLanguage={toggleLanguage} />
       </div>
@@ -823,6 +839,7 @@ const Overlay: React.FC<OverlayProps> = ({ activeSection, onClose, setActiveSect
                     readLinkLabel={t.library.readLink}
                     statusLabel={t.library.statusReading}
                     onAskAI={handleAskAIFromLibrary}
+                    initialTab={libraryTab}
                   />
                 </Suspense>
               </motion.div>

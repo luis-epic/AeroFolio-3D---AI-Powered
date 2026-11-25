@@ -9,6 +9,12 @@ import { Laptop, Brain, Smartphone, TechOrbit, ResumePaper, CoffeeMug } from './
 import HoloVideo from './HoloVideo';
 import StudioEnvironment from './StudioEnvironment';
 import CyberLibrary from './CyberLibrary';
+import {
+  CenteredGlbLibrary,
+  GlbHologramProjector,
+  GlbLaptopStation,
+  GlbSmartphoneContact,
+} from './GlbRoomElements';
 import Reveal from './Reveal';
 import { CAMERA_POSITIONS } from '../constants';
 import { Section } from '../types';
@@ -89,6 +95,10 @@ const Experience: React.FC<ExperienceProps> = ({ activeSection, setActiveSection
   const [isLaptopHovered, setIsLaptopHovered] = useState(false);
   const [introFinished, setIntroFinished] = useState(false);
   const [triggerGlitch, setTriggerGlitch] = useState(false);
+  const [glbLibraryLoaded, setGlbLibraryLoaded] = useState(false);
+  const [glbProjectorLoaded, setGlbProjectorLoaded] = useState(false);
+  const [glbLaptopLoaded, setGlbLaptopLoaded] = useState(false);
+  const [glbPhoneLoaded, setGlbPhoneLoaded] = useState(false);
 
   // Set Camera Controls limits via Ref (Props are not strictly typed in some versions of drei/CameraControls)
   useEffect(() => {
@@ -151,24 +161,30 @@ const Experience: React.FC<ExperienceProps> = ({ activeSection, setActiveSection
       setTriggerGlitch(true);
       const timer = setTimeout(() => setTriggerGlitch(false), 400); // 0.4s glitch duration
 
-      const { position, target } = getCameraConfig(activeSection, isMobile);
+      const baseConfig =
+        activeSection === 'library' && glbLibraryLoaded
+          ? {
+              position: isMobile ? ([0, 5.2, 10.2] as [number, number, number]) : ([0, 4.6, 8.2] as [number, number, number]),
+              target: [0, 1.2, -1.2] as [number, number, number],
+            }
+          : getCameraConfig(activeSection, isMobile);
 
       controlsRef.current.setLookAt(
-        position[0], position[1], position[2],
-        target[0], target[1], target[2],
+        baseConfig.position[0], baseConfig.position[1], baseConfig.position[2],
+        baseConfig.target[0], baseConfig.target[1], baseConfig.target[2],
         true // animated
       );
 
       return () => clearTimeout(timer);
     }
-  }, [activeSection, introFinished, isMobile]);
+  }, [activeSection, introFinished, isMobile, glbLibraryLoaded]);
 
   return (
     <>
       {/* Environment & Atmospheric Background */}
       <color attach="background" args={['#010307']} />
       
-      <fog attach="fog" args={['#020409', 12, 55]} />
+      <fog attach="fog" args={['#020409', 16, 75]} />
       {/* Zero-network procedural studio environment map for crisp metallic reflections without external .hdr fetch */}
       <Environment resolution={128} frames={1} environmentIntensity={0.45}>
         <Lightformer form="rect" intensity={2.2} color="#e0f2fe" position={[0, 8, 2]} rotation={[Math.PI / 2, 0, 0]} scale={[14, 6, 1]} />
@@ -198,6 +214,9 @@ const Experience: React.FC<ExperienceProps> = ({ activeSection, setActiveSection
       <pointLight position={[10, 5, -10]} intensity={8} color="#db2777" distance={20} />
       {/* Front Light for Desk Items - Ensures they are visible from the camera side */}
       <pointLight position={[0, 5, 10]} intensity={1.5} color="#ffffff" distance={30} />
+      {glbLibraryLoaded && (
+        <pointLight position={[0, 6.5, 0]} intensity={2.4} color="#fff7ed" distance={26} />
+      )}
       
       {/* Post Processing Effects - Optimized for performance */}
       <EffectComposer enableNormalPass={false} multisampling={0}>
@@ -253,7 +272,16 @@ const Experience: React.FC<ExperienceProps> = ({ activeSection, setActiveSection
       </group>
       
       {/* Background hologram: the presentation video, shown full frame */}
-      <HoloVideo paused={videoPaused} soundOn={soundOn} onSoundEnd={onSoundEnd} onEnded={onVideoEnded} />
+      <HoloVideo
+        paused={videoPaused}
+        soundOn={soundOn}
+        onSoundEnd={onSoundEnd}
+        onEnded={onVideoEnded}
+        hideBase={glbProjectorLoaded}
+      />
+
+      {/* GLB Hologram Projector directly under HoloVideo inside the room */}
+      <GlbHologramProjector onLoadedChange={setGlbProjectorLoaded} />
 
       {/* Interactive Elements */}
       <TechOrbit 
@@ -261,15 +289,24 @@ const Experience: React.FC<ExperienceProps> = ({ activeSection, setActiveSection
         hovered={isLaptopHovered} 
       />
 
-      {/* The desk objects pop in one after another, centre first. */}
-      <Reveal delay={0.5} origin={[0, 0.1, 0]}>
-        <Laptop 
-          active={activeSection === 'projects'} 
-          onClick={() => setActiveSection('projects')}
-          label={labels.projects}
-          onHoverChange={setIsLaptopHovered}
-        />
-      </Reveal>
+      {/* Center Laptop + Mouse (GLB when imported, procedural fallback otherwise) */}
+      <GlbLaptopStation
+        active={activeSection === 'projects'}
+        onClick={() => setActiveSection('projects')}
+        label={labels.projects}
+        onHoverChange={setIsLaptopHovered}
+        onLoadedChange={setGlbLaptopLoaded}
+      />
+      {!glbLaptopLoaded && (
+        <Reveal delay={0.5} origin={[0, 0.1, 0]}>
+          <Laptop 
+            active={activeSection === 'projects'} 
+            onClick={() => setActiveSection('projects')}
+            label={labels.projects}
+            onHoverChange={setIsLaptopHovered}
+          />
+        </Reveal>
+      )}
 
       <Reveal delay={0.75} origin={[-2.5, 0.55, 0.5]}>
         <Brain 
@@ -280,24 +317,43 @@ const Experience: React.FC<ExperienceProps> = ({ activeSection, setActiveSection
         />
       </Reveal>
 
-      <Reveal delay={0.9} origin={[2.5, 0.5, 0.5]}>
-        <Smartphone 
-          active={activeSection === 'contact'} 
-          onClick={() => setActiveSection('contact')} 
-          label={labels.contact}
-          visible={activeSection === 'home' || activeSection === 'contact'} 
-        />
-      </Reveal>
+      {/* Contact Smartphone (GLB iPhone 15 Pro when imported, procedural fallback otherwise) */}
+      <GlbSmartphoneContact
+        active={activeSection === 'contact'}
+        onClick={() => setActiveSection('contact')}
+        label={labels.contact}
+        visible={activeSection === 'home' || activeSection === 'contact'}
+        onLoadedChange={setGlbPhoneLoaded}
+      />
+      {!glbPhoneLoaded && (
+        <Reveal delay={0.9} origin={[2.5, 0.5, 0.5]}>
+          <Smartphone 
+            active={activeSection === 'contact'} 
+            onClick={() => setActiveSection('contact')} 
+            label={labels.contact}
+            visible={activeSection === 'home' || activeSection === 'contact'}
+          />
+        </Reveal>
+      )}
 
-      {/* Cyber Library / Digital Archive Unit */}
-      <Reveal delay={1.0} origin={[-3.6, 1.4, -1.0]}>
-        <CyberLibrary
-          active={activeSection === 'library'}
-          onClick={() => setActiveSection('library')}
-          label={labels.library}
-          visible={activeSection === 'home' || activeSection === 'library'}
-        />
-      </Reveal>
+      {/* Centered GLB Library Room (houses the interactive desk/prism/projector inside) */}
+      <CenteredGlbLibrary
+        active={activeSection === 'library'}
+        onClick={() => setActiveSection('library')}
+        onLoadedChange={setGlbLibraryLoaded}
+      />
+
+      {/* Fallback Procedural Cyber Library Rack when GLB library isn't present yet */}
+      {!glbLibraryLoaded && (
+        <Reveal delay={1.0} origin={[-3.6, 1.4, -1.0]}>
+          <CyberLibrary
+            active={activeSection === 'library'}
+            onClick={() => setActiveSection('library')}
+            label={labels.library}
+            visible={activeSection === 'home' || activeSection === 'library'}
+          />
+        </Reveal>
+      )}
 
       <Reveal delay={1.1} origin={[-1.1, 0.4, 1.2]}>
         <CoffeeMug />

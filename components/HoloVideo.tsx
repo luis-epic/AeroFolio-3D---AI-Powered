@@ -24,6 +24,8 @@ interface HoloVideoProps {
   onSoundEnd: () => void;
   /** The clip played through. It stays frozen on its last frame. */
   onEnded: () => void;
+  /** Hide procedural projector base when replaced by GLB hologram projector */
+  hideBase?: boolean;
 }
 
 // Expanded lateral width gives the holographic projection a wide, commanding cinematic presence
@@ -159,7 +161,7 @@ const loadImageTexture = (url: string): Texture => {
   return texture;
 };
 
-const HoloVideo: React.FC<HoloVideoProps> = ({ paused, soundOn, onSoundEnd, onEnded }) => {
+const HoloVideo: React.FC<HoloVideoProps> = ({ paused, soundOn, onSoundEnd, onEnded, hideBase = false }) => {
   const ringRef = useRef<Mesh>(null);
   const scanRef = useRef<Mesh>(null);
   const pictureRef = useRef<Mesh>(null);
@@ -308,27 +310,31 @@ const HoloVideo: React.FC<HoloVideoProps> = ({ paused, soundOn, onSoundEnd, onEn
 
   return (
     <group position={[0, EMITTER_Y, -2.4]}>
-      {/* Floating emitter */}
-      <mesh position={[0, -0.06, 0]}>
-        <cylinderGeometry args={[EMITTER_RADIUS, EMITTER_RADIUS * 0.82, 0.12, 48]} />
-        <meshStandardMaterial color="#111c33" metalness={0.85} roughness={0.25} />
-      </mesh>
-      <mesh position={[0, -0.24, 0]}>
-        <cylinderGeometry args={[0.5, 0.16, 0.26, 32]} />
-        <meshStandardMaterial color="#0b1120" metalness={0.9} roughness={0.3} />
-      </mesh>
-      <mesh position={[0, 0.005, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[0.2, EMITTER_RADIUS * 0.9, 48]} />
-        <meshBasicMaterial color={HOLO_COLOR} transparent opacity={0.16} blending={AdditiveBlending} depthWrite={false} toneMapped={false} />
-      </mesh>
-      <mesh rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[EMITTER_RADIUS, 0.022, 8, 64]} />
-        <meshBasicMaterial color={HOLO_COLOR} toneMapped={false} />
-      </mesh>
-      <mesh ref={ringRef} position={[0, 0.03, 0]} rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[0.62, 0.012, 8, 48, Math.PI * 1.6]} />
-        <meshBasicMaterial color={HOLO_COLOR} transparent opacity={0.7} blending={AdditiveBlending} toneMapped={false} />
-      </mesh>
+      {!hideBase && (
+        <>
+          {/* Floating emitter */}
+          <mesh position={[0, -0.06, 0]}>
+            <cylinderGeometry args={[EMITTER_RADIUS, EMITTER_RADIUS * 0.82, 0.12, 48]} />
+            <meshStandardMaterial color="#111c33" metalness={0.85} roughness={0.25} />
+          </mesh>
+          <mesh position={[0, -0.24, 0]}>
+            <cylinderGeometry args={[0.5, 0.16, 0.26, 32]} />
+            <meshStandardMaterial color="#0b1120" metalness={0.9} roughness={0.3} />
+          </mesh>
+          <mesh position={[0, 0.005, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+            <ringGeometry args={[0.2, EMITTER_RADIUS * 0.9, 48]} />
+            <meshBasicMaterial color={HOLO_COLOR} transparent opacity={0.16} blending={AdditiveBlending} depthWrite={false} toneMapped={false} />
+          </mesh>
+          <mesh rotation={[Math.PI / 2, 0, 0]}>
+            <torusGeometry args={[EMITTER_RADIUS, 0.022, 8, 64]} />
+            <meshBasicMaterial color={HOLO_COLOR} toneMapped={false} />
+          </mesh>
+          <mesh ref={ringRef} position={[0, 0.03, 0]} rotation={[Math.PI / 2, 0, 0]}>
+            <torusGeometry args={[0.62, 0.012, 8, 48, Math.PI * 1.6]} />
+            <meshBasicMaterial color={HOLO_COLOR} transparent opacity={0.7} blending={AdditiveBlending} toneMapped={false} />
+          </mesh>
+        </>
+      )}
 
       {/* Light cone from the emitter up to the picture */}
       <mesh position={[0, BEAM_HEIGHT / 2, 0]}>
